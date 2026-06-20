@@ -7,7 +7,9 @@ import {
   MessageSquare,
   CheckCircle2,
   ChevronDown,
+  Disc3,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const FAQ = [
   {
@@ -33,17 +35,37 @@ export default function SupportPage() {
   const [subject, setSubject] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !subject.trim()) return;
+
+    const artistName = localStorage.getItem("artist_name");
+    if (!artistName) {
+      setError("Session expired. Please refresh.");
+      return;
+    }
+
     setLoading(true);
-    // Simulate async submission
-    setTimeout(() => {
+    setError("");
+
+    const { error: dbError } = await supabase.from("support_tickets").insert({
+      artist_name: artistName,
+      subject: subject.trim(),
+      message: message.trim(),
+      status: "Open",
+    });
+
+    if (dbError) {
+      setError("Failed to send. Please try again.");
       setLoading(false);
-      setSubmitted(true);
-    }, 1200);
+      return;
+    }
+
+    setLoading(false);
+    setSubmitted(true);
   };
 
   return (
@@ -112,8 +134,7 @@ export default function SupportPage() {
               Message received!
             </p>
             <p className="text-sm text-text-secondary text-center max-w-xs">
-              Our team will get back to you within 4–8 hours. Check your
-              registered contact for the reply.
+              Our team will get back to you within 4–8 hours.
             </p>
             <button
               onClick={() => {
@@ -161,6 +182,10 @@ export default function SupportPage() {
               </p>
             </div>
 
+            {error && (
+              <p className="text-xs text-status-rejected">{error}</p>
+            )}
+
             <button
               type="submit"
               disabled={loading || !message.trim() || !subject.trim()}
@@ -170,7 +195,7 @@ export default function SupportPage() {
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <Disc3 className="w-4 h-4 animate-spin" />
                   Sending...
                 </>
               ) : (
