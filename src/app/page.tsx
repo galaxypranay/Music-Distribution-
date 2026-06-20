@@ -2,15 +2,15 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Music2, Disc3, Radio } from "lucide-react";
+import { ArrowRight, Music2, Disc3, Radio, Zap, Globe } from "lucide-react";
 
-const WAVEFORM_BARS = 28;
+const BARS = 32;
 
 export default function HomePage() {
   const router = useRouter();
   const [artistName, setArtistName] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -19,20 +19,16 @@ export default function HomePage() {
     if (stored) {
       router.replace("/dashboard/upload");
     } else {
-      setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 400);
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 500);
     }
   }, [router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = artistName.trim();
-    if (!trimmed) {
-      setError("Please enter your artist name.");
-      return;
-    }
-    if (trimmed.length < 2) {
-      setError("Name must be at least 2 characters.");
+    if (!trimmed || trimmed.length < 2) {
+      setError("Enter a valid artist name (min 2 chars).");
       return;
     }
     setSubmitting(true);
@@ -40,134 +36,131 @@ export default function HomePage() {
     setTimeout(() => router.push("/dashboard/upload"), 300);
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-bg-base flex items-center justify-center">
-        <Disc3 className="w-8 h-8 text-accent-violet animate-spin" />
+        <Disc3 className="w-8 h-8 text-accent-orange animate-spin" />
       </div>
     );
   }
 
   return (
     <main className="min-h-screen bg-bg-base relative overflow-hidden flex flex-col items-center justify-center px-4">
-      {/* Background radial glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-b from-[#7C3AED18] to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#4F46E518] rounded-full blur-3xl" />
-      </div>
 
-      {/* Animated waveform — signature element */}
-      <div className="flex items-end gap-[3px] h-12 mb-10 opacity-60">
-        {Array.from({ length: WAVEFORM_BARS }).map((_, i) => (
-          <div
-            key={i}
-            className="w-[3px] rounded-full bg-gradient-to-t from-accent-violet to-accent-glow"
-            style={{
-              height: `${Math.max(20, Math.sin(i * 0.45) * 40 + 24)}%`,
-              animation: `wave-bar ${0.8 + (i % 5) * 0.12}s ease-in-out infinite alternate`,
-              animationDelay: `${(i * 0.06).toFixed(2)}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Ambient orbs */}
+      <div className="fixed w-[600px] h-[600px] rounded-full pointer-events-none z-0 animate-orb-float"
+        style={{ background: "rgba(255,80,10,0.08)", filter: "blur(120px)", top: "20%", left: "-200px" }} />
+      <div className="fixed w-[500px] h-[400px] rounded-full pointer-events-none z-0"
+        style={{ background: "rgba(179,136,255,0.05)", filter: "blur(120px)", bottom: "10%", right: "-150px" }} />
+      <div className="fixed w-[350px] h-[300px] rounded-full pointer-events-none z-0"
+        style={{ background: "rgba(0,229,255,0.03)", filter: "blur(100px)", top: "50%", right: "10%" }} />
 
-      {/* Logo & tagline */}
-      <div className="text-center mb-10 animate-fade-up">
-        <div className="inline-flex items-center gap-2 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-gradient-accent flex items-center justify-center shadow-glow-violet">
-            <Music2 className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            Spilrix
-          </span>
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
+
+        {/* Waveform */}
+        <div className="flex items-end gap-[2px] h-10 mb-8 opacity-70">
+          {Array.from({ length: BARS }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full"
+              style={{
+                width: "3px",
+                background: `linear-gradient(to top, #ff6a00, #ff8533)`,
+                height: `${Math.max(15, Math.abs(Math.sin(i * 0.5)) * 100)}%`,
+                animation: `wave-bar ${0.7 + (i % 6) * 0.1}s ease-in-out infinite alternate`,
+                animationDelay: `${(i * 0.05).toFixed(2)}s`,
+              }}
+            />
+          ))}
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-text-primary tracking-tight leading-tight">
-          Your music,{" "}
-          <span className="bg-gradient-accent bg-clip-text text-transparent">
-            everywhere.
-          </span>
-        </h1>
-        <p className="mt-3 text-text-secondary text-base max-w-sm mx-auto leading-relaxed">
-          Upload your tracks, track distribution status, and reach listeners
-          across every platform.
-        </p>
-      </div>
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center btn-orange"
+            style={{ boxShadow: "var(--shadow-neon)" }}>
+            <Music2 className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-display text-4xl text-text-primary tracking-wider">SPILRIX</span>
+        </div>
 
-      {/* Input card */}
-      <div
-        className="w-full max-w-md animate-fade-up"
-        style={{ animationDelay: "0.1s", opacity: 0 }}
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="bg-bg-card border border-bg-border rounded-2xl p-6 shadow-card"
-        >
-          <label
-            htmlFor="artist-name"
-            className="block text-sm font-semibold text-text-primary mb-1.5 tracking-wide"
-          >
+        <p className="text-text-muted text-sm tracking-[0.2em] uppercase mb-10">
+          Music Distribution
+        </p>
+
+        {/* Main heading */}
+        <div className="text-center mb-10 animate-fade-up">
+          <h1 className="text-4xl sm:text-5xl font-bold text-text-primary leading-tight mb-3">
+            Your music,{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ff6a00, #ff8533, #ffaa66)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}>
+              everywhere.
+            </span>
+          </h1>
+          <p className="text-text-secondary text-base max-w-sm mx-auto leading-relaxed">
+            Upload your tracks and reach listeners on every major platform — Spotify, Apple Music, JioSaavn & 100+ more.
+          </p>
+        </div>
+
+        {/* Input card */}
+        <div className="w-full glass-card rounded-2xl p-6 mb-6 animate-fade-up"
+          style={{ animationDelay: "0.1s" }}>
+
+          <label className="block text-xs font-semibold text-text-muted uppercase tracking-widest mb-1">
             Artist Name
           </label>
-          <p className="text-xs text-text-muted mb-4">
-            This is how your releases will be listed on all platforms.
+          <p className="text-xs text-text-muted mb-4" style={{ color: "var(--muted)" }}>
+            This is how your releases will appear on all platforms.
           </p>
 
-          <input
-            ref={inputRef}
-            id="artist-name"
-            type="text"
-            value={artistName}
-            onChange={(e) => {
-              setArtistName(e.target.value);
-              if (error) setError("");
-            }}
-            placeholder="e.g. The Midnight, Billie Eilish..."
-            maxLength={60}
-            className={`w-full bg-bg-elevated border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted
-              transition-all duration-200 outline-none
-              ${error ? "border-status-rejected" : "border-bg-border focus:border-accent-violet focus:shadow-glow-sm"}`}
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              ref={inputRef}
+              type="text"
+              value={artistName}
+              onChange={(e) => { setArtistName(e.target.value); setError(""); }}
+              placeholder="e.g. The Midnight, Billie Eilish..."
+              maxLength={60}
+              className="input-skeu w-full rounded-xl px-4 py-3 text-sm"
+              style={{
+                borderColor: error ? "rgba(248,113,113,0.5)" : undefined,
+              }}
+            />
 
-          {error && (
-            <p className="mt-2 text-xs text-status-rejected animate-slide-in">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-accent text-white font-semibold text-sm py-3 px-6 rounded-xl
-              transition-all duration-200 hover:shadow-glow-violet hover:scale-[1.01] active:scale-[0.99]
-              disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
-          >
-            {submitting ? (
-              <>
-                <Disc3 className="w-4 h-4 animate-spin" />
-                Setting up...
-              </>
-            ) : (
-              <>
-                Enter Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </>
+            {error && (
+              <p className="text-xs animate-slide-in" style={{ color: "#f87171" }}>{error}</p>
             )}
-          </button>
-        </form>
 
-        {/* Trust indicators */}
-        <div className="mt-6 flex items-center justify-center gap-6 text-text-muted text-xs">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-orange w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-sm font-semibold"
+            >
+              {submitting ? (
+                <><Disc3 className="w-4 h-4 animate-spin" /> Setting up...</>
+              ) : (
+                <>Enter Dashboard <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Trust row */}
+        <div className="flex items-center justify-center gap-6 text-xs flex-wrap"
+          style={{ color: "var(--muted)" }}>
           <span className="flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5 text-accent-violet" />
+            <Globe className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
             100+ Platforms
           </span>
           <span className="flex items-center gap-1.5">
-            <Music2 className="w-3.5 h-3.5 text-accent-violet" />
-            Unlimited Uploads
+            <Zap className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
+            24hr Review
           </span>
           <span className="flex items-center gap-1.5">
-            <Disc3 className="w-3.5 h-3.5 text-accent-violet" />
+            <Radio className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
             Live Tracking
           </span>
         </div>

@@ -3,54 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import {
-  Upload,
-  BarChart2,
-  HeadphonesIcon,
-  Music2,
-  LogOut,
-  Disc3,
-  ChevronRight,
-} from "lucide-react";
+import { Upload, BarChart2, HeadphonesIcon, Music2, LogOut, Disc3 } from "lucide-react";
 
 const NAV = [
-  {
-    href: "/dashboard/upload",
-    label: "Upload",
-    icon: Upload,
-    desc: "Submit a release",
-  },
-  {
-    href: "/dashboard/analytics",
-    label: "Analytics",
-    icon: BarChart2,
-    desc: "Track your releases",
-  },
-  {
-    href: "/dashboard/support",
-    label: "Support",
-    icon: HeadphonesIcon,
-    desc: "Get help",
-  },
+  { href: "/dashboard/upload",    label: "Upload",    icon: Upload },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/dashboard/support",   label: "Support",   icon: HeadphonesIcon },
 ];
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router   = useRouter();
   const pathname = usePathname();
   const [artistName, setArtistName] = useState<string | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("artist_name");
-    if (!stored) {
-      router.replace("/");
-    } else {
-      setArtistName(stored);
-    }
+    if (!stored) { router.replace("/"); return; }
+    setArtistName(stored);
   }, [router]);
 
   const handleLogout = () => {
@@ -61,149 +30,106 @@ export default function DashboardLayout({
   if (!artistName) {
     return (
       <div className="min-h-screen bg-bg-base flex items-center justify-center">
-        <Disc3 className="w-8 h-8 text-accent-violet animate-spin" />
+        <Disc3 className="w-8 h-8 text-accent-orange animate-spin" />
       </div>
     );
   }
 
-  const initials = artistName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = artistName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-bg-base flex">
-      {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 border-r border-bg-border bg-bg-card fixed h-full z-20">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-bg-border">
-          <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center shadow-glow-sm">
-            <Music2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-text-primary tracking-tight">
-            Spilrix
-          </span>
-        </div>
+    <div className="min-h-screen bg-bg-base flex flex-col relative">
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map(({ href, label, icon: Icon, desc }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 group
-                  ${
-                    active
-                      ? "bg-accent-violet/15 text-text-primary shadow-glow-sm border border-accent-violet/20"
-                      : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
-                  }`}
-              >
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${active ? "text-accent-glow" : "text-text-muted group-hover:text-text-secondary"}`}
-                />
-                <div>
-                  <p className="font-medium leading-tight">{label}</p>
-                  <p className="text-[10px] text-text-muted mt-0.5">{desc}</p>
-                </div>
-                {active && (
-                  <ChevronRight className="w-3.5 h-3.5 ml-auto text-accent-violet/60" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Ambient orbs */}
+      <div className="fixed w-[500px] h-[400px] rounded-full pointer-events-none z-0 animate-orb-float"
+        style={{ background: "rgba(255,80,10,0.07)", filter: "blur(120px)", top: "-100px", left: "-150px" }} />
+      <div className="fixed w-[400px] h-[350px] rounded-full pointer-events-none z-0"
+        style={{ background: "rgba(179,136,255,0.04)", filter: "blur(100px)", bottom: "5%", right: "-100px" }} />
 
-        {/* Artist footer */}
-        <div className="px-3 pb-4 border-t border-bg-border pt-4">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-bg-elevated">
-            <div className="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center text-white text-xs font-bold shadow-glow-sm shrink-0">
-              {initials}
+      {/* ── TOP NAVBAR ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 h-16"
+        style={{
+          background: "rgba(26,18,8,0.88)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(255,235,190,0.08)",
+          boxShadow: "0 4px 20px rgba(10,5,0,0.4)",
+        }}>
+        <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
+
+          {/* Logo */}
+          <Link href="/dashboard/upload" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl btn-orange flex items-center justify-center">
+              <Music2 className="w-4 h-4 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text-primary truncate">
+            <span className="font-display text-2xl text-text-primary tracking-wider hidden sm:block">
+              SPILRIX
+            </span>
+          </Link>
+
+          {/* Center nav tabs */}
+          <div className="flex items-center gap-1 p-1 rounded-xl"
+            style={{
+              background: "var(--surface)",
+              boxShadow: "inset 3px 3px 8px rgba(10,5,0,0.4), inset -2px -2px 6px rgba(255,235,190,0.03)",
+            }}>
+            {NAV.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
+                  style={active ? {
+                    background: "linear-gradient(135deg, #ff6a00, #ff8533)",
+                    color: "white",
+                    boxShadow: "0 0 12px rgba(255,106,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                  } : {
+                    color: "var(--muted2)",
+                  }}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:block">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Artist + logout */}
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-card)",
+              }}>
+              <div className="w-6 h-6 rounded-full btn-orange flex items-center justify-center text-white text-[9px] font-bold">
+                {initials}
+              </div>
+              <span className="text-xs font-medium text-text-secondary max-w-[100px] truncate">
                 {artistName}
-              </p>
-              <p className="text-[10px] text-text-muted">Artist</p>
+              </span>
             </div>
             <button
               onClick={handleLogout}
               title="Switch artist"
-              className="text-text-muted hover:text-status-rejected transition-colors"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--muted2)",
+                boxShadow: "var(--shadow-card)",
+              }}
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      </aside>
+      </nav>
 
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-bg-card border-b border-bg-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-accent flex items-center justify-center">
-            <Music2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-text-primary text-sm">Spilrix</span>
-        </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-text-secondary p-1.5 rounded-lg hover:bg-bg-elevated"
-        >
-          <div className="space-y-1">
-            <span
-              className={`block w-5 h-0.5 bg-current transition-all ${mobileOpen ? "rotate-45 translate-y-1.5" : ""}`}
-            />
-            <span
-              className={`block w-5 h-0.5 bg-current transition-all ${mobileOpen ? "opacity-0" : ""}`}
-            />
-            <span
-              className={`block w-5 h-0.5 bg-current transition-all ${mobileOpen ? "-rotate-45 -translate-y-1.5" : ""}`}
-            />
-          </div>
-        </button>
-      </div>
-
-      {/* Mobile nav overlay */}
-      {mobileOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-20 bg-bg-base/90 backdrop-blur-sm"
-          onClick={() => setMobileOpen(false)}
-        >
-          <div
-            className="absolute top-14 left-0 right-0 bg-bg-card border-b border-bg-border p-4 space-y-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {NAV.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all
-                  ${pathname === href ? "bg-accent-violet/15 text-text-primary border border-accent-violet/20" : "text-text-secondary hover:bg-bg-elevated"}`}
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </Link>
-            ))}
-            <div className="pt-3 border-t border-bg-border mt-2">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-status-rejected hover:bg-bg-elevated w-full"
-              >
-                <LogOut className="w-4 h-4" />
-                Switch Artist
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main content */}
-      <main className="flex-1 md:ml-60 min-h-screen">
-        <div className="pt-14 md:pt-0">{children}</div>
+      {/* Main content — below navbar */}
+      <main className="flex-1 pt-16 relative z-10">
+        {children}
       </main>
     </div>
   );
