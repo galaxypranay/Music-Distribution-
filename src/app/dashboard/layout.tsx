@@ -1,34 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
-import { LayoutDashboard, Upload, BarChart2, HeadphonesIcon, Music2, LogOut, Disc3 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Music2, Disc3, Radio, Zap, Globe } from "lucide-react";
 
-const NAV = [
-  { href: "/dashboard/upload",    label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/upload",    label: "Upload",    icon: Upload           },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2        },
-  { href: "/dashboard/support",   label: "Support",   icon: HeadphonesIcon   },
-];
+const BARS = 32;
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router   = useRouter();
-  const pathname = usePathname();
-  const [artistName, setArtistName] = useState<string | null>(null);
+export default function HomePage() {
+  const router = useRouter();
+  const [artistName, setArtistName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("artist_name");
-    if (!stored) { router.replace("/"); return; }
-    setArtistName(stored);
+    if (stored) {
+      router.replace("/dashboard/upload");
+    } else {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 500);
+    }
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("artist_name");
-    router.push("/");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = artistName.trim();
+    if (!trimmed || trimmed.length < 2) {
+      setError("Enter a valid artist name (min 2 chars).");
+      return;
+    }
+    setSubmitting(true);
+    localStorage.setItem("artist_name", trimmed);
+    setTimeout(() => router.push("/dashboard/upload"), 300);
   };
 
-  if (!artistName) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-bg-base flex items-center justify-center">
         <Disc3 className="w-8 h-8 text-accent-orange animate-spin" />
@@ -36,108 +44,127 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const initials = artistName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-
-  // Active tab logic:
-  // - "Upload" and "Dashboard" both point to /dashboard/upload
-  // - Only "Upload" shows as active when on that page
-  // - "Dashboard" never shows as active (it's just a home link)
-  const isActive = (label: string, href: string) => {
-    if (label === "Dashboard") return false;
-    return pathname === href;
-  };
-
   return (
-    <div className="min-h-screen bg-bg-base flex flex-col relative">
+    <main className="min-h-screen bg-bg-base relative overflow-hidden flex flex-col items-center justify-center px-4">
 
       {/* Ambient orbs */}
-      <div className="fixed w-[500px] h-[400px] rounded-full pointer-events-none z-0 animate-orb-float"
-        style={{ background: "rgba(255,80,10,0.07)", filter: "blur(120px)", top: "-100px", left: "-150px" }} />
-      <div className="fixed w-[400px] h-[350px] rounded-full pointer-events-none z-0"
-        style={{ background: "rgba(179,136,255,0.04)", filter: "blur(100px)", bottom: "5%", right: "-100px" }} />
+      <div className="fixed w-[600px] h-[600px] rounded-full pointer-events-none z-0 animate-orb-float"
+        style={{ background: "rgba(255,80,10,0.08)", filter: "blur(120px)", top: "20%", left: "-200px" }} />
+      <div className="fixed w-[500px] h-[400px] rounded-full pointer-events-none z-0"
+        style={{ background: "rgba(179,136,255,0.05)", filter: "blur(120px)", bottom: "10%", right: "-150px" }} />
+      <div className="fixed w-[350px] h-[300px] rounded-full pointer-events-none z-0"
+        style={{ background: "rgba(0,229,255,0.03)", filter: "blur(100px)", top: "50%", right: "10%" }} />
 
-      {/* ── TOP NAVBAR ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-16"
-        style={{
-          background: "rgba(26,18,8,0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(255,235,190,0.08)",
-          boxShadow: "0 4px 20px rgba(10,5,0,0.4)",
-        }}>
-        <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between gap-4">
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
 
-          {/* Logo */}
-          <Link href="/dashboard/upload" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-xl btn-orange flex items-center justify-center">
-              <Music2 className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display text-2xl text-text-primary tracking-wider hidden sm:block">
-              SPILRIX
-            </span>
-          </Link>
-
-          {/* 4 nav tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl"
-            style={{
-              background: "var(--surface)",
-              boxShadow: "inset 3px 3px 8px rgba(10,5,0,0.4), inset -2px -2px 6px rgba(255,235,190,0.03)",
-            }}>
-            {NAV.map(({ href, label, icon: Icon }) => {
-              const active = isActive(label, href);
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap"
-                  style={active ? {
-                    background: "linear-gradient(135deg, #ff6a00, #ff8533)",
-                    color: "white",
-                    boxShadow: "0 0 12px rgba(255,106,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
-                  } : {
-                    color: "var(--muted2)",
-                  }}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden sm:block">{label}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Artist + logout */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl"
+        {/* Waveform */}
+        <div className="flex items-end gap-[2px] h-10 mb-8 opacity-70">
+          {Array.from({ length: BARS }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full"
               style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                boxShadow: "var(--shadow-card)",
-              }}>
-              <div className="w-6 h-6 rounded-full btn-orange flex items-center justify-center text-white text-[9px] font-bold">
-                {initials}
-              </div>
-              <span className="text-xs font-medium text-text-secondary max-w-[100px] truncate">
-                {artistName}
-              </span>
-            </div>
-            <button onClick={handleLogout} title="Switch artist"
-              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                color: "var(--muted2)",
-                boxShadow: "var(--shadow-card)",
-              }}>
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
+                width: "3px",
+                background: `linear-gradient(to top, #ff6a00, #ff8533)`,
+                height: `${Math.max(15, Math.abs(Math.sin(i * 0.5)) * 100)}%`,
+                animation: `wave-bar ${0.7 + (i % 6) * 0.1}s ease-in-out infinite alternate`,
+                animationDelay: `${(i * 0.05).toFixed(2)}s`,
+              }}
+            />
+          ))}
         </div>
-      </nav>
 
-      {/* Main content */}
-      <main className="flex-1 pt-16 relative z-10">
-        {children}
-      </main>
-    </div>
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center btn-orange"
+            style={{ boxShadow: "var(--shadow-neon)" }}>
+            <Music2 className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-display text-4xl text-text-primary tracking-wider">SPILRIX</span>
+        </div>
+
+        <p className="text-text-muted text-sm tracking-[0.2em] uppercase mb-10">
+          Music Distribution
+        </p>
+
+        {/* Main heading */}
+        <div className="text-center mb-10 animate-fade-up">
+          <h1 className="text-4xl sm:text-5xl font-bold text-text-primary leading-tight mb-3">
+            Your music,{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #ff6a00, #ff8533, #ffaa66)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}>
+              everywhere.
+            </span>
+          </h1>
+          <p className="text-text-secondary text-base max-w-sm mx-auto leading-relaxed">
+            Upload your tracks and reach listeners on every major platform — Spotify, Apple Music, JioSaavn & 100+ more.
+          </p>
+        </div>
+
+        {/* Input card */}
+        <div className="w-full glass-card rounded-2xl p-6 mb-6 animate-fade-up"
+          style={{ animationDelay: "0.1s" }}>
+
+          <label className="block text-xs font-semibold text-text-muted uppercase tracking-widest mb-1">
+            Artist Name
+          </label>
+          <p className="text-xs text-text-muted mb-4" style={{ color: "var(--muted)" }}>
+            This is how your releases will appear on all platforms.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              ref={inputRef}
+              type="text"
+              value={artistName}
+              onChange={(e) => { setArtistName(e.target.value); setError(""); }}
+              placeholder="e.g. The Midnight, Billie Eilish..."
+              maxLength={60}
+              className="input-skeu w-full rounded-xl px-4 py-3 text-sm"
+              style={{
+                borderColor: error ? "rgba(248,113,113,0.5)" : undefined,
+              }}
+            />
+
+            {error && (
+              <p className="text-xs animate-slide-in" style={{ color: "#f87171" }}>{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-orange w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-sm font-semibold"
+            >
+              {submitting ? (
+                <><Disc3 className="w-4 h-4 animate-spin" /> Setting up...</>
+              ) : (
+                <>Enter Dashboard <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Trust row */}
+        <div className="flex items-center justify-center gap-6 text-xs flex-wrap"
+          style={{ color: "var(--muted)" }}>
+          <span className="flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
+            100+ Platforms
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
+            24hr Review
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5" style={{ color: "#ff8533" }} />
+            Live Tracking
+          </span>
+        </div>
+      </div>
+    </main>
   );
 }
