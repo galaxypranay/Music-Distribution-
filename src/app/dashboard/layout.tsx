@@ -329,6 +329,81 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main content */}
       <main className="flex-1 pt-16 relative z-10">
+
+        {/* ── WEBSITE INFO SECTION ── */}
+        <section className="max-w-6xl mx-auto px-4 pt-10 pb-8">
+
+          {/* Hero */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-text-primary mb-3 leading-tight">
+              Release Your Music Worldwide.{" "}
+              <span style={{
+                background: "linear-gradient(135deg, #ff6a00, #ff8533)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                Keep 100% of Your Control.
+              </span>
+            </h1>
+            <p className="text-sm sm:text-base text-text-secondary" style={{ color: "var(--muted2)" }}>
+              Distribute your tracks to Spotify, Apple Music, YouTube, and TikTok in minutes.
+              No complex setups. No hidden fees. Just pure music distribution.
+            </p>
+          </div>
+
+          {/* 3 Features */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                emoji: "⚡",
+                title: "Ultra-Fast Upload",
+                desc: "Drop your WAV/MP3 files, fill in the song details, and submit. We handle the rest.",
+              },
+              {
+                emoji: "📊",
+                title: "Real-Time Track Status",
+                desc: "Monitor whether your song is Pending, Approved, or Live instantly from your dashboard.",
+              },
+              {
+                emoji: "💬",
+                title: "Direct WhatsApp Support",
+                desc: "Stuck somewhere? Connect with our team instantly with one single click.",
+              },
+            ].map((f) => (
+              <div key={f.title}
+                className="rounded-2xl p-5 flex flex-col gap-3"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-card)",
+                  transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "var(--shadow-hover), 0 0 15px rgba(255,106,0,0.12)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.borderColor = "var(--border2, rgba(255,106,0,0.2))";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "var(--shadow-card)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, #ff6a00, #ff8533)",
+                    boxShadow: "0 0 14px rgba(255,106,0,0.25)",
+                  }}>
+                  {f.emoji}
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary">{f.title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--muted2)" }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {children}
       </main>
     </div>
