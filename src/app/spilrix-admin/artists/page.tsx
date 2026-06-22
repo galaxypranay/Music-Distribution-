@@ -58,7 +58,7 @@ export default function AdminArtistsPage() {
 
       // Make sure artists who have releases but somehow no profile row still show up.
       const knownNames = new Set(profiles.map((p) => p.artist_name));
-      const extraNames = [...counts.keys()].filter((n) => !knownNames.has(n));
+      const extraNames = Array.from(counts.keys()).filter((n) => !knownNames.has(n));
 
       const merged: ArtistWithStats[] = [
         ...profiles.map((p) => ({
