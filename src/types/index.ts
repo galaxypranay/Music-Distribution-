@@ -33,3 +33,14 @@ export interface SupportTicket {
   status: "Open" | "Resolved";
   created_at: string;
 }
+
+export interface ArtistProfile {
+  id: string;
+  artist_name: string;
+  profile_image_url: string | null;
+  created_at: string;
+}
+
+export interface ArtistWithStats extends ArtistProfile {
+  total_songs: number;
+}

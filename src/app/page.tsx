@@ -2,9 +2,21 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Music2, Disc3, Radio, Zap, Globe } from "lucide-react";
+import {
+  ArrowRight,
+  Music2,
+  Disc3,
+  Radio,
+  Zap,
+  Globe,
+  Camera,
+  User,
+  X,
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const BARS = 32;
+const MAX_IMAGE_MB = 3;
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,7 +24,13 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState("");
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("artist_name");
@@ -24,16 +42,96 @@ export default function HomePage() {
     }
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Clean up object URL preview on unmount/change
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const handlePhotoSelect = (file: File | null) => {
+    if (!file) return;
+    setPhotoError("");
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select an image file.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      setPhotoError(`Image must be under ${MAX_IMAGE_MB}MB.`);
+      return;
+    }
+
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const removePhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = artistName.trim();
     if (!trimmed || trimmed.length < 2) {
       setError("Enter a valid artist name (min 2 chars).");
       return;
     }
+
     setSubmitting(true);
-    localStorage.setItem("artist_name", trimmed);
-    setTimeout(() => router.push("/dashboard/upload"), 300);
+    setError("");
+
+    try {
+      let profileImageUrl: string | null = null;
+
+      // 1. Upload profile photo if provided
+      if (photoFile) {
+        const ext = photoFile.name.split(".").pop();
+        const fileName = `${trimmed.replace(/\s+/g, "_")}_${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(fileName, photoFile, {
+            contentType: photoFile.type,
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(fileName);
+
+        profileImageUrl = urlData.publicUrl;
+      }
+
+      // 2. Create or update artist profile row
+      const { error: profileError } = await supabase
+        .from("artist_profiles")
+        .upsert(
+          {
+            artist_name: trimmed,
+            ...(profileImageUrl ? { profile_image_url: profileImageUrl } : {}),
+          },
+          { onConflict: "artist_name", ignoreDuplicates: false }
+        );
+
+      if (profileError) throw profileError;
+
+      // 3. Save session locally and continue
+      localStorage.setItem("artist_name", trimmed);
+      setTimeout(() => router.push("/dashboard/upload"), 300);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Try again.";
+      setError(message);
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -45,7 +143,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-base relative overflow-hidden flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-bg-base relative overflow-hidden flex flex-col items-center justify-center px-4 py-10">
 
       {/* Ambient orbs */}
       <div className="fixed w-[600px] h-[600px] rounded-full pointer-events-none z-0 animate-orb-float"
@@ -109,26 +207,90 @@ export default function HomePage() {
         <div className="w-full glass-card rounded-2xl p-6 mb-6 animate-fade-up"
           style={{ animationDelay: "0.1s" }}>
 
-          <label className="block text-xs font-semibold text-text-muted uppercase tracking-widest mb-1">
-            Artist Name
-          </label>
-          <p className="text-xs text-text-muted mb-4" style={{ color: "var(--muted)" }}>
-            This is how your releases will appear on all platforms.
-          </p>
+          <form onSubmit={handleSubmit} className="space-y-5">
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              ref={inputRef}
-              type="text"
-              value={artistName}
-              onChange={(e) => { setArtistName(e.target.value); setError(""); }}
-              placeholder="e.g. The Midnight, Billie Eilish..."
-              maxLength={60}
-              className="input-skeu w-full rounded-xl px-4 py-3 text-sm"
-              style={{
-                borderColor: error ? "rgba(248,113,113,0.5)" : undefined,
-              }}
-            />
+            {/* Profile photo picker */}
+            <div className="flex flex-col items-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => handlePhotoSelect(e.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden group"
+                style={{
+                  background: "var(--surface)",
+                  border: "2px dashed var(--border)",
+                }}
+              >
+                {photoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoPreview}
+                    alt="Profile preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-7 h-7" style={{ color: "var(--muted)" }} />
+                )}
+                <div
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: "rgba(0,0,0,0.5)" }}
+                >
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+              </button>
+
+              {photoPreview ? (
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="flex items-center gap-1 text-xs mt-2 transition-colors"
+                  style={{ color: "var(--muted)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; }}
+                >
+                  <X className="w-3 h-3" /> Remove photo
+                </button>
+              ) : (
+                <p className="text-xs mt-2" style={{ color: "var(--muted)" }}>
+                  Add a profile photo (optional, max {MAX_IMAGE_MB}MB)
+                </p>
+              )}
+
+              {photoError && (
+                <p className="text-xs mt-1 animate-slide-in" style={{ color: "#f87171" }}>
+                  {photoError}
+                </p>
+              )}
+            </div>
+
+            {/* Artist name */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-widest mb-1">
+                Artist Name
+              </label>
+              <p className="text-xs text-text-muted mb-4" style={{ color: "var(--muted)" }}>
+                This is how your releases will appear on all platforms.
+              </p>
+
+              <input
+                ref={inputRef}
+                type="text"
+                value={artistName}
+                onChange={(e) => { setArtistName(e.target.value); setError(""); }}
+                placeholder="e.g. The Midnight, Billie Eilish..."
+                maxLength={60}
+                className="input-skeu w-full rounded-xl px-4 py-3 text-sm"
+                style={{
+                  borderColor: error ? "rgba(248,113,113,0.5)" : undefined,
+                }}
+              />
+            </div>
 
             {error && (
               <p className="text-xs animate-slide-in" style={{ color: "#f87171" }}>{error}</p>

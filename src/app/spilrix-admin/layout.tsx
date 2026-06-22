@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Ticket, Music2, Shield } from "lucide-react";
+import { LayoutDashboard, Ticket, Music2, Shield, Users } from "lucide-react";
 
 const NAV = [
   {
@@ -10,6 +10,12 @@ const NAV = [
     label: "Releases",
     icon: LayoutDashboard,
     desc: "Manage all tracks",
+  },
+  {
+    href: "/spilrix-admin/artists",
+    label: "Artists",
+    icon: Users,
+    desc: "Profiles & songs",
   },
   {
     href: "/spilrix-admin/tickets",
