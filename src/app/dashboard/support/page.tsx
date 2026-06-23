@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const FAQ = [
   {
@@ -33,17 +34,39 @@ export default function SupportPage() {
   const [subject, setSubject] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !subject.trim()) return;
+
+    const artistName = localStorage.getItem("artist_name");
+    if (!artistName) {
+      setError("Session expired. Please refresh and sign in again.");
+      return;
+    }
+
     setLoading(true);
-    // Simulate async submission
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+
+    try {
+      const { error: insertError } = await supabase.from("support_tickets").insert({
+        artist_name: artistName,
+        subject: subject.trim(),
+        message: message.trim(),
+        status: "Open",
+      });
+
+      if (insertError) throw insertError;
+
       setSubmitted(true);
-    }, 1200);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -166,6 +189,7 @@ export default function SupportPage() {
                 setSubmitted(false);
                 setMessage("");
                 setSubject("");
+                setError("");
               }}
               className="mt-2 text-xs hover:underline"
               style={{ color: "#ff8533" }}
@@ -232,6 +256,12 @@ export default function SupportPage() {
                 {message.length}/1000
               </p>
             </div>
+
+            {error && (
+              <p className="text-xs animate-slide-in" style={{ color: "#f87171" }}>
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"

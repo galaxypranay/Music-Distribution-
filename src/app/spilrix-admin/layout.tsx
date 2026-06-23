@@ -2,15 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Ticket, Music2, Shield, Users } from "lucide-react";
+import { Ticket, Music2, Shield, Users } from "lucide-react";
 
 const NAV = [
-  {
-    href: "/spilrix-admin",
-    label: "Releases",
-    icon: LayoutDashboard,
-    desc: "Manage all tracks",
-  },
   {
     href: "/spilrix-admin/artists",
     label: "Artists",
@@ -50,10 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map(({ href, label, icon: Icon, desc }) => {
-            const active =
-              href === "/spilrix-admin"
-                ? pathname === "/spilrix-admin"
-                : pathname.startsWith(href);
+            const active = pathname.startsWith(href);
             return (
               <Link
                 key={href}
@@ -97,7 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key={href}
               href={href}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                ${(href === "/spilrix-admin" ? pathname === href : pathname.startsWith(href))
+                ${pathname.startsWith(href)
                   ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
                   : "text-text-secondary hover:bg-bg-elevated"
                 }`}

@@ -251,6 +251,7 @@ export default function UploadPage() {
             type="date"
             value={releaseDate}
             onChange={(e) => setReleaseDate(e.target.value)}
+            min={new Date().toISOString().split("T")[0]}
             className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all [color-scheme:dark]"
             style={inputStyle}
             onFocus={(e) => {
