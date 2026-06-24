@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Spilrix design tokens === */
+  --color-void: #0a0908;
+  --color-surface: #15130f;
+  --color-surface-raised: #1c1914;
+  --color-line: #2a2620;
+
+  --color-brass: #c9a24b;
+  --color-brass-dim: #8a7138;
+  --color-brass-bright: #e3c581;
+
+  --color-ivory: #f3efe6;
+  --color-ivory-dim: #a8a296;
+  --color-ivory-faint: #6e6a60;
+
+  --color-emerald: #3f6c5b;
+  --color-emerald-bright: #5d9c84;
+
+  --color-rust: #8a4434;
+  --color-rust-bright: #c06a52;
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-ivory);
+    font-family: var(--font-body);
+  }
+
+  ::selection {
+    background-color: rgba(201, 162, 75, 0.35);
+    color: var(--color-ivory);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.75) sepia(1) saturate(2) hue-rotate(10deg);
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  /* Signature ambient motif: a vinyl-groove field, used once on the login gateway */
+  .groove-field {
+    background-image: repeating-radial-gradient(
+      circle at 50% 42%,
+      rgba(201, 162, 75, 0.07) 0px,
+      rgba(201, 162, 75, 0.07) 1px,
+      transparent 2px,
+      transparent 15px
+    );
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-line);
+    border-radius: 999px;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
