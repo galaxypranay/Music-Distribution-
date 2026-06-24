@@ -51,11 +51,11 @@ export default function SupportPage() {
   return (
     <div className="mx-auto max-w-2xl animate-fade-up">
       <header className="mb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-brass-dim">
+        <p className="inline-block -rotate-2 bg-cobalt px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white">
           Get help
         </p>
-        <h1 className="mt-2 font-display text-3xl text-ivory">Support</h1>
-        <p className="mt-2 text-sm text-ivory-dim">
+        <h1 className="mt-3 font-display text-3xl uppercase text-ink">Support</h1>
+        <p className="mt-2 text-sm font-medium text-ink-soft">
           Send a query to the Spilrix team. We reply by email within two business days.
         </p>
       </header>
@@ -79,13 +79,13 @@ export default function SupportPage() {
           />
 
           {error ? (
-            <p className="rounded-md border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust-bright">
+            <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
               {error}
             </p>
           ) : null}
 
           {state === 'success' ? (
-            <p className="rounded-md border border-emerald-bright/40 bg-emerald/10 px-4 py-3 text-sm text-emerald-bright">
+            <p className="rounded-lg border-[2.5px] border-ink bg-lime px-4 py-3 text-sm font-bold text-ink shadow-[3px_3px_0_0_var(--color-ink)]">
               Sent. Our team has received your query.
             </p>
           ) : null}

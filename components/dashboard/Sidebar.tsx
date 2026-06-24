@@ -15,7 +15,7 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden w-60 flex-col gap-1 border-r border-line px-4 py-8 md:flex">
+    <aside className="hidden w-60 flex-col gap-3 border-r-[3px] border-ink px-4 py-8 md:flex">
       {TABS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href
 
@@ -24,13 +24,13 @@ export default function Sidebar() {
             key={href}
             href={href}
             className={cn(
-              'flex items-center gap-3 rounded-md border-l-2 px-3.5 py-3 text-sm font-medium transition-colors duration-150',
+              'flex items-center gap-3 rounded-lg border-[3px] px-3.5 py-3 text-sm font-bold uppercase tracking-wide transition-all duration-150',
               isActive
-                ? 'border-brass bg-surface text-ivory'
-                : 'border-transparent text-ivory-dim hover:bg-surface/60 hover:text-ivory'
+                ? 'border-ink bg-canary text-ink shadow-[3px_3px_0_0_var(--color-ink)]'
+                : 'border-transparent text-ink-soft hover:border-ink hover:bg-white hover:shadow-[3px_3px_0_0_var(--color-ink)]'
             )}
           >
-            <Icon className={cn('h-4 w-4', isActive ? 'text-brass' : 'text-ivory-faint')} />
+            <Icon className="h-4 w-4" />
             {label}
           </Link>
         )

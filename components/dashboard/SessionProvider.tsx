@@ -30,8 +30,8 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
 
   if (!artist) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-void">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-brass-dim">
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.3em] text-ink-faint">
           Loading dashboard…
         </p>
       </div>

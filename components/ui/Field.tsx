@@ -6,7 +6,7 @@ import type {
 import { cn } from '@/lib/utils'
 
 const FIELD_BASE =
-  'w-full rounded-md border border-line bg-surface px-3.5 py-2.5 font-body text-sm text-ivory placeholder:text-ivory-faint transition-colors duration-150 focus:border-brass-dim focus:outline-none disabled:opacity-50'
+  'w-full rounded-lg border-[3px] border-ink bg-white px-3.5 py-2.5 font-body text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow duration-150 focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none disabled:opacity-50'
 
 interface FieldWrapperProps {
   label: string
@@ -20,13 +20,13 @@ function FieldLabel({ label, hint, required, htmlFor }: FieldWrapperProps) {
     <div className="mb-2 flex items-baseline justify-between">
       <label
         htmlFor={htmlFor}
-        className="font-mono text-[11px] uppercase tracking-[0.18em] text-ivory-dim"
+        className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink"
       >
         {label}
-        {required ? <span className="text-brass"> *</span> : null}
+        {required ? <span className="text-punch"> *</span> : null}
       </label>
       {hint ? (
-        <span className="font-mono text-[10px] text-ivory-faint">{hint}</span>
+        <span className="font-mono text-[10px] text-ink-faint">{hint}</span>
       ) : null}
     </div>
   )

@@ -165,13 +165,14 @@ checks.
 
 ## Design notes
 
-The palette swaps the usual "neon-on-black" SaaS look for something closer to
-a record label's leather-and-brass aesthetic: warm near-black (`--color-void`),
-brushed brass for primary accents, deep emerald/rust for approve/reject states
-instead of pure green/red. `Fraunces` (display serif) carries headings and the
-wordmark; `Inter` handles UI text; `JetBrains Mono` is used for anything
-catalog-like — status pills, timestamps, labels — echoing a record sleeve's
-printed metadata. The one recurring signature motif is the **status badge**
-("catalog stamp"): a small dot + mono uppercase label, identical wherever a
-release's status appears, tying the artist dashboard and admin panel together
-visually.
+The UI is neobrutalist: thick black borders, hard offset shadows (no blur),
+flat poster colors, and a tactile "press down" interaction on every button —
+the shadow collapses and the element shifts down-right on click. It leans
+into a punk-flyer/zine energy, which fits an indie music distributor better
+than a slick SaaS look. `Archivo Black` carries the wordmark and headlines;
+`Space Grotesk` handles UI text; `JetBrains Mono` is used for anything
+catalog-like — status stamps, timestamps — echoing a cassette tape's printed
+labeling. The signature motif is the **status badge**, now a literal,
+slightly rotated rubber stamp (canary for pending, lime for approved, punch
+pink for rejected) — fitting, since approving a release is exactly what an
+admin is doing when they click it.

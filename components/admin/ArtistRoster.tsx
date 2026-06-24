@@ -7,7 +7,7 @@ export default function ArtistRoster({ artists }: { artists: Artist[] }) {
   if (artists.length === 0) {
     return (
       <Card className="px-6 py-10 text-center">
-        <p className="text-sm text-ivory-dim">No artists have registered yet.</p>
+        <p className="text-sm font-medium text-ink-soft">No artists have registered yet.</p>
       </Card>
     )
   }
@@ -21,16 +21,16 @@ export default function ArtistRoster({ artists }: { artists: Artist[] }) {
             <img
               src={artist.photo_url}
               alt={artist.name}
-              className="h-12 w-12 shrink-0 rounded-full border border-brass-dim/50 object-cover"
+              className="h-12 w-12 shrink-0 rounded-md border-[2.5px] border-ink object-cover"
             />
           ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-brass-dim/50 bg-surface-raised">
-              <UserIcon className="h-5 w-5 text-ivory-dim" />
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-canary">
+              <UserIcon className="h-5 w-5 text-ink" />
             </span>
           )}
           <div className="min-w-0">
-            <p className="truncate font-medium text-ivory">{artist.name}</p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ivory-faint">
+            <p className="truncate font-bold text-ink">{artist.name}</p>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">
               Joined {formatDate(artist.created_at)}
             </p>
           </div>

@@ -90,19 +90,21 @@ export default function LoginGatewayPage() {
   }
 
   if (existingArtist === undefined || existingArtist) {
-    return <div className="min-h-screen bg-void" />
+    return <div className="min-h-screen bg-paper" />
   }
 
   return (
-    <main className="groove-field relative flex min-h-screen items-center justify-center bg-void px-6 py-16">
-      <div className="animate-fade-up w-full max-w-md">
-        <div className="mb-10 flex flex-col items-center text-center">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canary px-6 py-16">
+      <div aria-hidden className="halftone-field absolute inset-0 opacity-[0.12]" />
+
+      <div className="animate-fade-up relative z-10 w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center text-center">
           <Logo />
         </div>
 
-        <div className="rounded-2xl border border-line bg-surface/90 p-8 shadow-[0_0_60px_-15px_rgba(201,162,75,0.15)] backdrop-blur-sm md:p-10">
-          <h1 className="font-display text-2xl text-ivory">Welcome, artist</h1>
-          <p className="mt-2 text-sm text-ivory-dim">
+        <div className="rounded-2xl border-[3px] border-ink bg-white p-8 shadow-[8px_8px_0_0_var(--color-ink)] md:p-10">
+          <h1 className="font-display text-2xl uppercase text-ink">Welcome, artist</h1>
+          <p className="mt-2 text-sm font-medium text-ink-soft">
             Tell us who you are. No password, no waiting room.
           </p>
 
@@ -110,7 +112,7 @@ export default function LoginGatewayPage() {
             <div className="flex flex-col items-center gap-3">
               <label
                 htmlFor="profile-photo"
-                className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full border border-dashed border-line bg-surface-raised transition-colors hover:border-brass-dim"
+                className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full border-[3px] border-ink bg-paper shadow-[4px_4px_0_0_var(--color-ink)] transition-transform hover:-translate-y-0.5"
               >
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -120,9 +122,9 @@ export default function LoginGatewayPage() {
                     className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
-                  <UserIcon className="h-8 w-8 text-ivory-faint" />
+                  <UserIcon className="h-8 w-8 text-ink-faint" />
                 )}
-                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ivory-dim transition-colors group-hover:border-brass-dim group-hover:text-brass">
+                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-[2.5px] border-ink bg-cobalt text-white">
                   <Camera className="h-3.5 w-3.5" />
                 </span>
               </label>
@@ -134,7 +136,7 @@ export default function LoginGatewayPage() {
                 className="sr-only"
                 onChange={(e) => handlePhotoChange(e.target.files?.[0] ?? null)}
               />
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ivory-faint">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint">
                 Profile photo (optional)
               </p>
             </div>
@@ -142,9 +144,9 @@ export default function LoginGatewayPage() {
             <div>
               <label
                 htmlFor="artist-name"
-                className="mb-2 block font-mono text-[11px] uppercase tracking-[0.18em] text-ivory-dim"
+                className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink"
               >
-                Artist name <span className="text-brass">*</span>
+                Artist name <span className="text-punch">*</span>
               </label>
               <input
                 id="artist-name"
@@ -154,12 +156,12 @@ export default function LoginGatewayPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Naomi Reyes"
-                className="w-full rounded-md border border-line bg-surface-raised px-3.5 py-3 text-center font-display text-lg text-ivory placeholder:text-ivory-faint focus:border-brass-dim focus:outline-none"
+                className="w-full rounded-lg border-[3px] border-ink bg-paper px-3.5 py-3 text-center font-display text-lg uppercase text-ink placeholder:font-body placeholder:text-base placeholder:normal-case placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
               />
             </div>
 
             {error ? (
-              <p className="rounded-md border border-rust/40 bg-rust/10 px-4 py-3 text-center text-sm text-rust-bright">
+              <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-center text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
                 {error}
               </p>
             ) : null}
@@ -170,7 +172,7 @@ export default function LoginGatewayPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.25em] text-ivory-faint">
+        <p className="mt-6 text-center font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-ink">
           Spilrix Distribution — independent release management
         </p>
       </div>

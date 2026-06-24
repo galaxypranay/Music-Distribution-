@@ -7,7 +7,7 @@ import MobileTabs from '@/components/dashboard/MobileTabs'
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardSessionProvider>
-      <div className="min-h-screen bg-void">
+      <div className="min-h-screen bg-paper">
         <TopNav />
         <MobileTabs />
         <div className="flex">

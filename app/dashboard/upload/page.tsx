@@ -99,11 +99,11 @@ export default function UploadPage() {
   return (
     <div className="mx-auto max-w-2xl animate-fade-up">
       <header className="mb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-brass-dim">
+        <p className="inline-block -rotate-2 bg-cobalt px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white">
           New submission
         </p>
-        <h1 className="mt-2 font-display text-3xl text-ivory">Upload a release</h1>
-        <p className="mt-2 text-sm text-ivory-dim">
+        <h1 className="mt-3 font-display text-3xl uppercase text-ink">Upload a release</h1>
+        <p className="mt-2 text-sm font-medium text-ink-soft">
           Every submission enters Pending Review before it reaches the catalog.
         </p>
       </header>
@@ -142,27 +142,27 @@ export default function UploadPage() {
           </div>
 
           <div>
-            <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ivory-dim">
-              Audio file <span className="text-brass">*</span>
+            <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
+              Audio file <span className="text-punch">*</span>
             </p>
             <label
               htmlFor="audio-file"
-              className="flex cursor-pointer items-center gap-4 rounded-md border border-dashed border-line bg-surface px-4 py-6 transition-colors hover:border-brass-dim"
+              className="flex cursor-pointer items-center gap-4 rounded-lg border-[3px] border-dashed border-ink bg-paper px-4 py-6 transition-colors hover:bg-canary/30"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brass-dim/50 bg-surface-raised">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-white">
                 {audioFile ? (
-                  <Music2 className="h-5 w-5 text-brass" />
+                  <Music2 className="h-5 w-5 text-cobalt" />
                 ) : (
-                  <UploadCloud className="h-5 w-5 text-ivory-dim" />
+                  <UploadCloud className="h-5 w-5 text-ink-soft" />
                 )}
               </span>
-              <span className="text-sm">
+              <span className="text-sm font-medium">
                 {audioFile ? (
-                  <span className="text-ivory">{audioFile.name}</span>
+                  <span className="text-ink">{audioFile.name}</span>
                 ) : (
                   <>
-                    <span className="text-ivory">Choose a file</span>{' '}
-                    <span className="text-ivory-faint">— MP3 or WAV, up to 50MB</span>
+                    <span className="text-ink">Choose a file</span>{' '}
+                    <span className="text-ink-faint">— MP3 or WAV, up to 50MB</span>
                   </>
                 )}
               </span>
@@ -179,13 +179,13 @@ export default function UploadPage() {
           </div>
 
           {error ? (
-            <p className="rounded-md border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust-bright">
+            <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
               {error}
             </p>
           ) : null}
 
           {state === 'success' ? (
-            <p className="rounded-md border border-emerald-bright/40 bg-emerald/10 px-4 py-3 text-sm text-emerald-bright">
+            <p className="rounded-lg border-[2.5px] border-ink bg-lime px-4 py-3 text-sm font-bold text-ink shadow-[3px_3px_0_0_var(--color-ink)]">
               Submitted. Track its status under the Status tab.
             </p>
           ) : null}

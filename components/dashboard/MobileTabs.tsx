@@ -15,7 +15,7 @@ export default function MobileTabs() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex border-b border-line md:hidden">
+    <nav className="flex border-b-[3px] border-ink md:hidden">
       {TABS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href
 
@@ -24,13 +24,11 @@ export default function MobileTabs() {
             key={href}
             href={href}
             className={cn(
-              'flex flex-1 flex-col items-center gap-1 border-b-2 py-3 text-xs font-medium',
-              isActive
-                ? 'border-brass text-ivory'
-                : 'border-transparent text-ivory-dim'
+              'flex flex-1 flex-col items-center gap-1 border-r-[3px] border-ink py-3 text-xs font-bold uppercase last:border-r-0',
+              isActive ? 'bg-canary text-ink' : 'bg-paper text-ink-soft'
             )}
           >
-            <Icon className={cn('h-4 w-4', isActive ? 'text-brass' : 'text-ivory-faint')} />
+            <Icon className="h-4 w-4" />
             {label}
           </Link>
         )

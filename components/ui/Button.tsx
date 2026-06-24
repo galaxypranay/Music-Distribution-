@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-type Variant = 'primary' | 'ghost' | 'danger' | 'outline'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -9,14 +9,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_STYLES: Record<Variant, string> = {
-  primary:
-    'bg-brass text-void hover:bg-brass-bright disabled:bg-brass-dim disabled:text-ivory-faint',
-  ghost:
-    'bg-transparent text-ivory-dim hover:text-ivory hover:bg-surface-raised disabled:text-ivory-faint',
-  outline:
-    'bg-transparent text-ivory border border-line hover:border-brass-dim disabled:text-ivory-faint',
-  danger:
-    'bg-transparent text-rust-bright border border-rust/50 hover:bg-rust/10 disabled:text-ivory-faint',
+  primary: 'bg-canary text-ink hover:bg-canary-deep disabled:bg-canary/50',
+  secondary: 'bg-cobalt text-white hover:bg-cobalt-deep disabled:bg-cobalt/50',
+  ghost: 'bg-white text-ink hover:bg-paper disabled:text-ink-faint',
+  danger: 'bg-punch text-white hover:bg-punch-deep disabled:bg-punch/50',
 }
 
 export default function Button({
@@ -31,14 +27,14 @@ export default function Button({
     <button
       disabled={disabled || isLoading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 font-body text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed',
+        'brutal-press inline-flex items-center justify-center gap-2 rounded-lg border-[3px] border-ink px-4 py-2.5 font-body text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_var(--color-ink)] transition-colors duration-150 disabled:cursor-not-allowed disabled:shadow-none',
         VARIANT_STYLES[variant],
         className
       )}
       {...props}
     >
       {isLoading ? (
-        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-[2.5px] border-current border-t-transparent" />
       ) : null}
       {children}
     </button>

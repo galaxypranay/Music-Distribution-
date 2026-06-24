@@ -80,7 +80,7 @@ export default function AdminPage() {
   }
 
   if (passcode === undefined) {
-    return <div className="min-h-screen bg-void" />
+    return <div className="min-h-screen bg-paper" />
   }
 
   if (!passcode) {
@@ -90,18 +90,18 @@ export default function AdminPage() {
   const isLoading = artists === null || releases === null
 
   return (
-    <main className="min-h-screen bg-void px-6 py-10 md:px-10">
-      <header className="mx-auto mb-10 flex max-w-6xl items-center justify-between">
+    <main className="min-h-screen bg-paper px-6 py-10 md:px-10">
+      <header className="mx-auto mb-10 flex max-w-6xl items-center justify-between border-b-[3px] border-ink pb-6">
         <div>
           <Logo />
-          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.25em] text-brass-dim">
+          <p className="mt-3 inline-block -rotate-2 bg-canary px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-ink">
             Control room
           </p>
         </div>
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-ivory-dim transition-colors hover:border-rust/50 hover:text-rust-bright"
+          className="brutal-press flex items-center gap-2 rounded-lg border-[3px] border-ink bg-white px-4 py-2.5 text-sm font-bold uppercase text-ink shadow-[3px_3px_0_0_var(--color-ink)] transition-colors hover:bg-punch hover:text-white"
         >
           <LogOut className="h-3.5 w-3.5" />
           Lock panel
@@ -110,21 +110,21 @@ export default function AdminPage() {
 
       <div className="mx-auto max-w-6xl space-y-12">
         {error ? (
-          <p className="rounded-md border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust-bright">
+          <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
             {error}
           </p>
         ) : null}
 
         {isLoading ? (
-          <p className="font-mono text-xs uppercase tracking-[0.25em] text-ivory-faint">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
             Loading…
           </p>
         ) : (
           <>
             <section>
-              <h2 className="mb-4 font-display text-xl text-ivory">
+              <h2 className="mb-4 font-display text-xl uppercase text-ink">
                 Registered artists
-                <span className="ml-3 font-mono text-xs font-normal text-ivory-faint">
+                <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
                   {artists.length}
                 </span>
               </h2>
@@ -132,9 +132,9 @@ export default function AdminPage() {
             </section>
 
             <section>
-              <h2 className="mb-4 font-display text-xl text-ivory">
+              <h2 className="mb-4 font-display text-xl uppercase text-ink">
                 All submissions
-                <span className="ml-3 font-mono text-xs font-normal text-ivory-faint">
+                <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
                   {releases.length}
                 </span>
               </h2>

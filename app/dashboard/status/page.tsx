@@ -41,29 +41,29 @@ export default function StatusPage() {
   return (
     <div className="mx-auto max-w-4xl animate-fade-up">
       <header className="mb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-brass-dim">
+        <p className="inline-block -rotate-2 bg-cobalt px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white">
           Catalog
         </p>
-        <h1 className="mt-2 font-display text-3xl text-ivory">Submission status</h1>
-        <p className="mt-2 text-sm text-ivory-dim">
+        <h1 className="mt-3 font-display text-3xl uppercase text-ink">Submission status</h1>
+        <p className="mt-2 text-sm font-medium text-ink-soft">
           Every release you&apos;ve submitted, and where it stands.
         </p>
       </header>
 
       {error ? (
-        <p className="rounded-md border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust-bright">
+        <p className="mb-6 rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
           {error}
         </p>
       ) : null}
 
       {isLoading ? (
-        <p className="font-mono text-xs uppercase tracking-[0.25em] text-ivory-faint">
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
           Loading…
         </p>
       ) : releases.length === 0 ? (
         <Card className="px-6 py-12 text-center">
-          <p className="font-display text-lg text-ivory">No submissions yet</p>
-          <p className="mt-2 text-sm text-ivory-dim">
+          <p className="font-display text-lg uppercase text-ink">No submissions yet</p>
+          <p className="mt-2 text-sm font-medium text-ink-soft">
             Upload your first release to see it tracked here.
           </p>
         </Card>
@@ -71,27 +71,27 @@ export default function StatusPage() {
         <Card className="overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line">
-                <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+              <tr className="border-b-[3px] border-ink bg-canary">
+                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
                   Song title
                 </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
                   Genre
                 </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
                   Release date
                 </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
                   Status
                 </th>
               </tr>
             </thead>
             <tbody>
               {releases.map((release) => (
-                <tr key={release.id} className="border-b border-line last:border-0">
-                  <td className="px-5 py-4 font-medium text-ivory">{release.song_title}</td>
-                  <td className="px-5 py-4 text-ivory-dim">{release.genre ?? '—'}</td>
-                  <td className="px-5 py-4 text-ivory-dim">{formatDate(release.release_date)}</td>
+                <tr key={release.id} className="border-b-[2.5px] border-ink last:border-0">
+                  <td className="px-5 py-4 font-bold text-ink">{release.song_title}</td>
+                  <td className="px-5 py-4 font-medium text-ink-soft">{release.genre ?? '—'}</td>
+                  <td className="px-5 py-4 font-medium text-ink-soft">{formatDate(release.release_date)}</td>
                   <td className="px-5 py-4">
                     <StatusBadge status={release.status} />
                   </td>

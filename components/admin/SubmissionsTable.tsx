@@ -48,7 +48,7 @@ export default function SubmissionsTable({
   if (releases.length === 0) {
     return (
       <Card className="px-6 py-10 text-center">
-        <p className="text-sm text-ivory-dim">No submissions yet.</p>
+        <p className="text-sm font-medium text-ink-soft">No submissions yet.</p>
       </Card>
     )
   }
@@ -57,23 +57,23 @@ export default function SubmissionsTable({
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[860px] text-left text-sm">
         <thead>
-          <tr className="border-b border-line">
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+          <tr className="border-b-[3px] border-ink bg-canary">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Artist
             </th>
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Song
             </th>
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Date
             </th>
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Preview
             </th>
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Status
             </th>
-            <th className="px-5 py-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ivory-faint">
+            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Actions
             </th>
           </tr>
@@ -83,20 +83,20 @@ export default function SubmissionsTable({
             const isPending = pendingId === release.id
 
             return (
-              <tr key={release.id} className="border-b border-line last:border-0">
-                <td className="px-5 py-4 text-ivory">{release.artist_name}</td>
+              <tr key={release.id} className="border-b-[2.5px] border-ink last:border-0">
+                <td className="px-5 py-4 font-bold text-ink">{release.artist_name}</td>
                 <td className="px-5 py-4">
-                  <p className="font-medium text-ivory">{release.song_title}</p>
-                  <p className="text-xs text-ivory-faint">{release.genre ?? '—'}</p>
+                  <p className="font-bold text-ink">{release.song_title}</p>
+                  <p className="text-xs font-medium text-ink-faint">{release.genre ?? '—'}</p>
                 </td>
-                <td className="px-5 py-4 text-ivory-dim">{formatDate(release.release_date)}</td>
+                <td className="px-5 py-4 font-medium text-ink-soft">{formatDate(release.release_date)}</td>
                 <td className="px-5 py-4">
                   <audio controls src={release.audio_url} className="h-9 w-52" />
                 </td>
                 <td className="px-5 py-4">
                   <StatusBadge status={release.status} />
                   {errorId === release.id ? (
-                    <p className="mt-1 font-mono text-[10px] text-rust-bright">Update failed</p>
+                    <p className="mt-1 font-mono text-[10px] font-bold text-punch">Update failed</p>
                   ) : null}
                 </td>
                 <td className="px-5 py-4">
@@ -105,19 +105,19 @@ export default function SubmissionsTable({
                       type="button"
                       disabled={isPending || release.status === 'Approved'}
                       onClick={() => updateStatus(release.id, 'Approved')}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-bright/40 text-emerald-bright transition-colors hover:bg-emerald/15 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="brutal-press flex h-9 w-9 items-center justify-center rounded-md border-[2.5px] border-ink bg-lime text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                       aria-label="Approve"
                     >
-                      <Check className="h-3.5 w-3.5" />
+                      <Check className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       disabled={isPending || release.status === 'Rejected'}
                       onClick={() => updateStatus(release.id, 'Rejected')}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-rust-bright/40 text-rust-bright transition-colors hover:bg-rust/15 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="brutal-press flex h-9 w-9 items-center justify-center rounded-md border-[2.5px] border-ink bg-punch text-white shadow-[2px_2px_0_0_var(--color-ink)] transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                       aria-label="Reject"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                 </td>

@@ -1,16 +1,10 @@
 import { cn } from '@/lib/utils'
 import type { ReleaseStatus } from '@/lib/types'
 
-const DOT_STYLES: Record<ReleaseStatus, string> = {
-  'Pending Review': 'bg-brass',
-  Approved: 'bg-emerald-bright',
-  Rejected: 'bg-rust-bright',
-}
-
-const TEXT_STYLES: Record<ReleaseStatus, string> = {
-  'Pending Review': 'text-brass border-brass/35 bg-brass/10',
-  Approved: 'text-emerald-bright border-emerald-bright/35 bg-emerald/15',
-  Rejected: 'text-rust-bright border-rust-bright/35 bg-rust/15',
+const FILL_STYLES: Record<ReleaseStatus, string> = {
+  'Pending Review': 'bg-canary text-ink',
+  Approved: 'bg-lime text-ink',
+  Rejected: 'bg-punch text-white',
 }
 
 const LABELS: Record<ReleaseStatus, string> = {
@@ -19,15 +13,15 @@ const LABELS: Record<ReleaseStatus, string> = {
   Rejected: 'Rejected',
 }
 
+/** The recurring signature motif: a stamped, slightly rotated status badge. */
 export default function StatusBadge({ status }: { status: ReleaseStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em]',
-        TEXT_STYLES[status]
+        'stamp-rotate inline-flex w-fit items-center whitespace-nowrap rounded-md border-[2.5px] border-ink px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] shadow-[2px_2px_0_0_var(--color-ink)]',
+        FILL_STYLES[status]
       )}
     >
-      <span className={cn('h-1.5 w-1.5 rounded-full', DOT_STYLES[status])} />
       {LABELS[status]}
     </span>
   )
