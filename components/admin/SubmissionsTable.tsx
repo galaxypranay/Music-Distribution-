@@ -11,12 +11,17 @@ interface SubmissionsTableProps {
   releases: Release[]
   passcode: string
   onStatusChange: (releaseId: string, status: ReleaseStatus) => void
+  /** Hide the redundant Artist column when the table is already scoped to one artist. */
+  showArtistColumn?: boolean
+  emptyMessage?: string
 }
 
 export default function SubmissionsTable({
   releases,
   passcode,
   onStatusChange,
+  showArtistColumn = true,
+  emptyMessage = 'No submissions yet.',
 }: SubmissionsTableProps) {
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [errorId, setErrorId] = useState<string | null>(null)
@@ -48,7 +53,7 @@ export default function SubmissionsTable({
   if (releases.length === 0) {
     return (
       <Card className="px-6 py-10 text-center">
-        <p className="text-sm font-medium text-ink-soft">No submissions yet.</p>
+        <p className="text-sm font-medium text-ink-soft">{emptyMessage}</p>
       </Card>
     )
   }
@@ -58,9 +63,11 @@ export default function SubmissionsTable({
       <table className="w-full min-w-[860px] text-left text-sm">
         <thead>
           <tr className="border-b-[3px] border-ink bg-canary">
-            <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
-              Artist
-            </th>
+            {showArtistColumn ? (
+              <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
+                Artist
+              </th>
+            ) : null}
             <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
               Song
             </th>
@@ -84,7 +91,9 @@ export default function SubmissionsTable({
 
             return (
               <tr key={release.id} className="border-b-[2.5px] border-ink last:border-0">
-                <td className="px-5 py-4 font-bold text-ink">{release.artist_name}</td>
+                {showArtistColumn ? (
+                  <td className="px-5 py-4 font-bold text-ink">{release.artist_name}</td>
+                ) : null}
                 <td className="px-5 py-4">
                   <p className="font-bold text-ink">{release.song_title}</p>
                   <p className="text-xs font-medium text-ink-faint">{release.genre ?? '—'}</p>

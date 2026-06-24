@@ -70,7 +70,7 @@ components/
 ├── StatusBadge.tsx                The recurring "catalog stamp" status pill
 ├── Logo.tsx
 ├── dashboard/                     SessionProvider, TopNav, Sidebar, MobileTabs
-└── admin/                         AdminGate, ArtistRoster, SubmissionsTable
+└── admin/                         AdminGate, ArtistRoster, ArtistDetailPanel, SubmissionsTable
 
 lib/
 ├── supabase/client.ts             Browser client (anon key) — Storage only
@@ -134,6 +134,17 @@ build-time secrets (everything Supabase-related is read lazily at request
 time, never at build time).
 
 ---
+
+## Admin panel features
+
+- **Click an artist card** to open a panel scoped to just that artist —
+  their own releases, with the same preview/approve/reject controls as the
+  master table, plus per-status counts (total/pending/approved/rejected).
+  Click the card again, or the panel's close button, to collapse it.
+- **Search the roster** by artist name — handy once you have more than a
+  handful of registered artists.
+- **Filter the master submissions table** by status (All / Pending /
+  Approved / Rejected) so pending work surfaces quickly as volume grows.
 
 ## Security notes — read this before going to production
 

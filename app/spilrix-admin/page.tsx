@@ -1,16 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { LogOut, Search } from 'lucide-react'
 import Logo from '@/components/Logo'
 import AdminGate from '@/components/admin/AdminGate'
-import ArtistRoster from '@/components/admin/ArtistRoster'
+import ArtistRoster, { type ArtistReleaseCounts } from '@/components/admin/ArtistRoster'
+import ArtistDetailPanel from '@/components/admin/ArtistDetailPanel'
 import SubmissionsTable from '@/components/admin/SubmissionsTable'
+import { cn } from '@/lib/utils'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
 import type { Artist, Release, ReleaseStatus } from '@/lib/types'
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
+
+type StatusFilter = 'All' | ReleaseStatus
+
+const STATUS_FILTERS: StatusFilter[] = ['All', 'Pending Review', 'Approved', 'Rejected']
 
 export default function AdminPage() {
   // undefined = not yet resolved (brief, pre-hydration) · null = no stored passcode
@@ -20,6 +26,10 @@ export default function AdminPage() {
   const [artists, setArtists] = useState<Artist[] | null>(null)
   const [releases, setReleases] = useState<Release[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [artistSearch, setArtistSearch] = useState('')
+  const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
 
   useEffect(() => {
     if (!passcode) return
@@ -61,6 +71,49 @@ export default function AdminPage() {
     }
   }, [passcode])
 
+  // Per-artist release counts, recomputed whenever the releases list changes.
+  const countsByArtistId = useMemo(() => {
+    const counts: Record<string, ArtistReleaseCounts> = {}
+
+    for (const release of releases ?? []) {
+      const entry = counts[release.artist_id] ?? {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+      }
+
+      entry.total += 1
+      if (release.status === 'Pending Review') entry.pending += 1
+      if (release.status === 'Approved') entry.approved += 1
+      if (release.status === 'Rejected') entry.rejected += 1
+
+      counts[release.artist_id] = entry
+    }
+
+    return counts
+  }, [releases])
+
+  const filteredArtists = useMemo(() => {
+    if (!artists) return []
+    const query = artistSearch.trim().toLowerCase()
+    if (!query) return artists
+    return artists.filter((artist) => artist.name.toLowerCase().includes(query))
+  }, [artists, artistSearch])
+
+  const selectedArtist = artists?.find((artist) => artist.id === selectedArtistId) ?? null
+
+  const selectedArtistReleases = useMemo(
+    () => (releases ?? []).filter((release) => release.artist_id === selectedArtistId),
+    [releases, selectedArtistId]
+  )
+
+  const filteredReleases = useMemo(() => {
+    if (!releases) return []
+    if (statusFilter === 'All') return releases
+    return releases.filter((release) => release.status === statusFilter)
+  }, [releases, statusFilter])
+
   function handleGateSuccess(code: string) {
     setStorageItem('sessionStorage', PASSCODE_KEY, code)
   }
@@ -69,6 +122,7 @@ export default function AdminPage() {
     removeStorageItem('sessionStorage', PASSCODE_KEY)
     setArtists(null)
     setReleases(null)
+    setSelectedArtistId(null)
   }
 
   function handleStatusChange(releaseId: string, status: ReleaseStatus) {
@@ -77,6 +131,10 @@ export default function AdminPage() {
         ? prev.map((release) => (release.id === releaseId ? { ...release, status } : release))
         : prev
     )
+  }
+
+  function handleSelectArtist(artistId: string) {
+    setSelectedArtistId((current) => (current === artistId ? null : artistId))
   }
 
   if (passcode === undefined) {
@@ -121,27 +179,90 @@ export default function AdminPage() {
           </p>
         ) : (
           <>
-            <section>
-              <h2 className="mb-4 font-display text-xl uppercase text-ink">
-                Registered artists
-                <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
-                  {artists.length}
-                </span>
-              </h2>
-              <ArtistRoster artists={artists} />
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <h2 className="font-display text-xl uppercase text-ink">
+                  Registered artists
+                  <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
+                    {artists.length}
+                  </span>
+                </h2>
+
+                <div className="relative w-full max-w-xs">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                  <input
+                    type="text"
+                    value={artistSearch}
+                    onChange={(e) => setArtistSearch(e.target.value)}
+                    placeholder="Search artists…"
+                    className="w-full rounded-lg border-[3px] border-ink bg-white py-2 pl-9 pr-3 text-sm font-medium text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <ArtistRoster
+                artists={filteredArtists}
+                countsByArtistId={countsByArtistId}
+                selectedArtistId={selectedArtistId}
+                onSelectArtist={handleSelectArtist}
+              />
+
+              {selectedArtist ? (
+                <ArtistDetailPanel
+                  artist={selectedArtist}
+                  releases={selectedArtistReleases}
+                  counts={
+                    countsByArtistId[selectedArtist.id] ?? {
+                      total: 0,
+                      pending: 0,
+                      approved: 0,
+                      rejected: 0,
+                    }
+                  }
+                  passcode={passcode}
+                  onStatusChange={handleStatusChange}
+                  onClose={() => setSelectedArtistId(null)}
+                />
+              ) : null}
             </section>
 
-            <section>
-              <h2 className="mb-4 font-display text-xl uppercase text-ink">
-                All submissions
-                <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
-                  {releases.length}
-                </span>
-              </h2>
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <h2 className="font-display text-xl uppercase text-ink">
+                  All submissions
+                  <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
+                    {releases.length}
+                  </span>
+                </h2>
+
+                <div className="flex flex-wrap gap-2">
+                  {STATUS_FILTERS.map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setStatusFilter(filter)}
+                      className={cn(
+                        'rounded-md border-[2.5px] border-ink px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] transition-colors',
+                        statusFilter === filter
+                          ? 'bg-ink text-paper'
+                          : 'bg-white text-ink hover:bg-paper'
+                      )}
+                    >
+                      {filter === 'Pending Review' ? 'Pending' : filter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <SubmissionsTable
-                releases={releases}
+                releases={filteredReleases}
                 passcode={passcode}
                 onStatusChange={handleStatusChange}
+                emptyMessage={
+                  statusFilter === 'All'
+                    ? 'No submissions yet.'
+                    : `No submissions with status "${statusFilter}".`
+                }
               />
             </section>
           </>
