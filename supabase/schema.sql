@@ -78,23 +78,31 @@ on conflict (id) do nothing;
 
 -- Public read so profile photos and audio previews can be played directly
 -- from their public URL (artist dashboard avatars, admin audio previews).
-create policy if not exists "Public read access - profiles"
+--
+-- Note: Postgres's CREATE POLICY does not support IF NOT EXISTS, so each
+-- policy is dropped first (a no-op if it doesn't exist yet) to keep this
+-- script safely re-runnable.
+drop policy if exists "Public read access - profiles" on storage.objects;
+create policy "Public read access - profiles"
   on storage.objects for select
   using (bucket_id = 'profiles');
 
-create policy if not exists "Public read access - songs"
+drop policy if exists "Public read access - songs" on storage.objects;
+create policy "Public read access - songs"
   on storage.objects for select
   using (bucket_id = 'songs');
 
 -- Anyone can upload into these two buckets (this is the "no password"
 -- trade-off described in the README), but nobody can overwrite or delete
 -- existing files — there are intentionally no update/delete policies below.
-create policy if not exists "Public upload - profiles"
+drop policy if exists "Public upload - profiles" on storage.objects;
+create policy "Public upload - profiles"
   on storage.objects for insert
   to anon, authenticated
   with check (bucket_id = 'profiles');
 
-create policy if not exists "Public upload - songs"
+drop policy if exists "Public upload - songs" on storage.objects;
+create policy "Public upload - songs"
   on storage.objects for insert
   to anon, authenticated
   with check (bucket_id = 'songs');
