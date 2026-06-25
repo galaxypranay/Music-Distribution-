@@ -1,4 +1,4 @@
-import { User as UserIcon } from 'lucide-react'
+import { LifeBuoy, User as UserIcon } from 'lucide-react'
 import type { Artist } from '@/lib/types'
 import { formatDate, cn } from '@/lib/utils'
 import Card from '@/components/ui/Card'
@@ -10,9 +10,15 @@ export interface ArtistReleaseCounts {
   rejected: number
 }
 
+export interface ArtistTicketCounts {
+  total: number
+  open: number
+}
+
 interface ArtistRosterProps {
   artists: Artist[]
   countsByArtistId: Record<string, ArtistReleaseCounts>
+  ticketCountsByArtistId: Record<string, ArtistTicketCounts>
   selectedArtistId: string | null
   onSelectArtist: (artistId: string) => void
 }
@@ -20,6 +26,7 @@ interface ArtistRosterProps {
 export default function ArtistRoster({
   artists,
   countsByArtistId,
+  ticketCountsByArtistId,
   selectedArtistId,
   onSelectArtist,
 }: ArtistRosterProps) {
@@ -40,6 +47,7 @@ export default function ArtistRoster({
           approved: 0,
           rejected: 0,
         }
+        const ticketCounts = ticketCountsByArtistId[artist.id] ?? { total: 0, open: 0 }
         const isSelected = artist.id === selectedArtistId
 
         return (
@@ -76,13 +84,19 @@ export default function ArtistRoster({
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="rounded-md border-2 border-ink bg-paper px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
                 {counts.total} {counts.total === 1 ? 'release' : 'releases'}
               </span>
               {counts.pending > 0 ? (
                 <span className="stamp-rotate rounded-md border-2 border-ink bg-canary px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
                   {counts.pending} pending
+                </span>
+              ) : null}
+              {ticketCounts.open > 0 ? (
+                <span className="stamp-rotate flex items-center gap-1 rounded-md border-2 border-ink bg-cobalt px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-white">
+                  <LifeBuoy className="h-3 w-3" />
+                  {ticketCounts.open} open
                 </span>
               ) : null}
             </div>

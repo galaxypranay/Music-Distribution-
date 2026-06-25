@@ -19,13 +19,15 @@ export interface Release {
   created_at: string
 }
 
+export type TicketStatus = 'Open' | 'Closed'
+
 export interface Ticket {
   id: string
   artist_id: string
   artist_name: string
   subject: string
   message: string
-  status: string
+  status: TicketStatus
   created_at: string
 }
 

@@ -2,19 +2,23 @@
 
 import { useEffect, useRef } from 'react'
 import { User as UserIcon, X } from 'lucide-react'
-import type { Artist, Release, ReleaseStatus } from '@/lib/types'
+import type { Artist, Release, ReleaseStatus, Ticket, TicketStatus } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
-import type { ArtistReleaseCounts } from '@/components/admin/ArtistRoster'
+import type { ArtistReleaseCounts, ArtistTicketCounts } from '@/components/admin/ArtistRoster'
 import Card from '@/components/ui/Card'
 import SubmissionsTable from '@/components/admin/SubmissionsTable'
+import TicketsList from '@/components/admin/TicketsList'
 
 interface ArtistDetailPanelProps {
   artist: Artist
   releases: Release[]
   counts: ArtistReleaseCounts
+  tickets: Ticket[]
+  ticketCounts: ArtistTicketCounts
   passcode: string
   onStatusChange: (releaseId: string, status: ReleaseStatus) => void
   onDelete: (releaseId: string) => void
+  onTicketStatusChange: (ticketId: string, status: TicketStatus) => void
   onClose: () => void
 }
 
@@ -22,9 +26,12 @@ export default function ArtistDetailPanel({
   artist,
   releases,
   counts,
+  tickets,
+  ticketCounts,
   passcode,
   onStatusChange,
   onDelete,
+  onTicketStatusChange,
   onClose,
 }: ArtistDetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -64,7 +71,7 @@ export default function ArtistDetailPanel({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <CountChip label="Total" value={counts.total} fillClassName="bg-white text-ink" />
             <CountChip label="Pending" value={counts.pending} fillClassName="bg-canary text-ink" />
             <CountChip label="Approved" value={counts.approved} fillClassName="bg-lime text-ink" />
@@ -82,15 +89,34 @@ export default function ArtistDetailPanel({
         </div>
       </div>
 
-      <div className="p-4 md:p-6">
-        <SubmissionsTable
-          releases={releases}
-          passcode={passcode}
-          onStatusChange={onStatusChange}
-          onDelete={onDelete}
-          showArtistColumn={false}
-          emptyMessage={`${artist.name} hasn't submitted anything yet.`}
-        />
+      <div className="space-y-8 p-4 md:p-6">
+        <div>
+          <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+            Releases
+          </p>
+          <SubmissionsTable
+            releases={releases}
+            passcode={passcode}
+            onStatusChange={onStatusChange}
+            onDelete={onDelete}
+            showArtistColumn={false}
+            emptyMessage={`${artist.name} hasn't submitted anything yet.`}
+          />
+        </div>
+
+        <div>
+          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+            Support tickets
+            {ticketCounts.total > 0 ? (
+              <span className="font-normal text-ink-faint">({ticketCounts.total})</span>
+            ) : null}
+          </p>
+          <TicketsList
+            tickets={tickets}
+            passcode={passcode}
+            onStatusChange={onTicketStatusChange}
+          />
+        </div>
       </div>
     </Card>
   )

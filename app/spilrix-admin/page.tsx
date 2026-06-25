@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { LogOut, Search } from 'lucide-react'
 import Logo from '@/components/Logo'
 import AdminGate from '@/components/admin/AdminGate'
-import ArtistRoster, { type ArtistReleaseCounts } from '@/components/admin/ArtistRoster'
+import ArtistRoster, {
+  type ArtistReleaseCounts,
+  type ArtistTicketCounts,
+} from '@/components/admin/ArtistRoster'
 import ArtistDetailPanel from '@/components/admin/ArtistDetailPanel'
 import StorageUsageMeter from '@/components/admin/StorageUsageMeter'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
-import type { Artist, Release, ReleaseStatus, StorageUsage } from '@/lib/types'
+import type { Artist, Release, ReleaseStatus, StorageUsage, Ticket, TicketStatus } from '@/lib/types'
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
 
@@ -20,6 +23,7 @@ export default function AdminPage() {
   // null = "not loaded yet" — distinct from an empty array, which means "loaded, zero rows"
   const [artists, setArtists] = useState<Artist[] | null>(null)
   const [releases, setReleases] = useState<Release[] | null>(null)
+  const [tickets, setTickets] = useState<Ticket[] | null>(null)
   // Storage usage fails soft: an older Supabase project that hasn't re-run
   // schema.sql yet just won't show the meter, rather than breaking the page.
   const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null)
@@ -36,23 +40,26 @@ export default function AdminPage() {
     async function loadAdminData() {
       try {
         const headers = { 'x-admin-passcode': passcode as string }
-        const [artistsRes, releasesRes, storageRes] = await Promise.all([
+        const [artistsRes, releasesRes, ticketsRes, storageRes] = await Promise.all([
           fetch('/api/admin/artists', { headers }),
           fetch('/api/admin/releases', { headers }),
+          fetch('/api/admin/tickets', { headers }),
           fetch('/api/admin/storage', { headers }),
         ])
 
-        if (!artistsRes.ok || !releasesRes.ok) {
+        if (!artistsRes.ok || !releasesRes.ok || !ticketsRes.ok) {
           removeStorageItem('sessionStorage', PASSCODE_KEY)
           throw new Error('Session expired. Enter the passcode again.')
         }
 
         const artistsResult = await artistsRes.json()
         const releasesResult = await releasesRes.json()
+        const ticketsResult = await ticketsRes.json()
 
         if (isMounted) {
           setArtists(artistsResult.artists ?? [])
           setReleases(releasesResult.releases ?? [])
+          setTickets(ticketsResult.tickets ?? [])
           setError(null)
         }
 
@@ -97,6 +104,20 @@ export default function AdminPage() {
     return counts
   }, [releases])
 
+  // Per-artist ticket counts, recomputed whenever the tickets list changes.
+  const ticketCountsByArtistId = useMemo(() => {
+    const counts: Record<string, ArtistTicketCounts> = {}
+
+    for (const ticket of tickets ?? []) {
+      const entry = counts[ticket.artist_id] ?? { total: 0, open: 0 }
+      entry.total += 1
+      if (ticket.status === 'Open') entry.open += 1
+      counts[ticket.artist_id] = entry
+    }
+
+    return counts
+  }, [tickets])
+
   const filteredArtists = useMemo(() => {
     if (!artists) return []
     const query = artistSearch.trim().toLowerCase()
@@ -111,6 +132,11 @@ export default function AdminPage() {
     [releases, selectedArtistId]
   )
 
+  const selectedArtistTickets = useMemo(
+    () => (tickets ?? []).filter((ticket) => ticket.artist_id === selectedArtistId),
+    [tickets, selectedArtistId]
+  )
+
   function handleGateSuccess(code: string) {
     setStorageItem('sessionStorage', PASSCODE_KEY, code)
   }
@@ -119,6 +145,7 @@ export default function AdminPage() {
     removeStorageItem('sessionStorage', PASSCODE_KEY)
     setArtists(null)
     setReleases(null)
+    setTickets(null)
     setSelectedArtistId(null)
   }
 
@@ -134,6 +161,12 @@ export default function AdminPage() {
     setReleases((prev) => (prev ? prev.filter((release) => release.id !== releaseId) : prev))
   }
 
+  function handleTicketStatusChange(ticketId: string, status: TicketStatus) {
+    setTickets((prev) =>
+      prev ? prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, status } : ticket)) : prev
+    )
+  }
+
   function handleSelectArtist(artistId: string) {
     setSelectedArtistId((current) => (current === artistId ? null : artistId))
   }
@@ -146,7 +179,7 @@ export default function AdminPage() {
     return <AdminGate onSuccess={handleGateSuccess} />
   }
 
-  const isLoading = artists === null || releases === null
+  const isLoading = artists === null || releases === null || tickets === null
 
   return (
     <main className="min-h-screen bg-paper px-6 py-10 md:px-10">
@@ -209,6 +242,7 @@ export default function AdminPage() {
             <ArtistRoster
               artists={filteredArtists}
               countsByArtistId={countsByArtistId}
+              ticketCountsByArtistId={ticketCountsByArtistId}
               selectedArtistId={selectedArtistId}
               onSelectArtist={handleSelectArtist}
             />
@@ -225,9 +259,12 @@ export default function AdminPage() {
                     rejected: 0,
                   }
                 }
+                tickets={selectedArtistTickets}
+                ticketCounts={ticketCountsByArtistId[selectedArtist.id] ?? { total: 0, open: 0 }}
                 passcode={passcode}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDeleteRelease}
+                onTicketStatusChange={handleTicketStatusChange}
                 onClose={() => setSelectedArtistId(null)}
               />
             ) : null}

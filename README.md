@@ -138,14 +138,18 @@ time, never at build time).
 ## Admin panel features
 
 - **Click an artist card** to open a panel scoped to just that artist —
-  their own releases, with preview/approve/reject controls, plus per-status
-  counts (total/pending/approved/rejected). Click the card again, or the
-  panel's close button, to collapse it. This is the only place releases are
-  viewed — there's no separate flat "all submissions" table.
+  their own releases (preview/approve/reject/delete) and their own support
+  tickets, all in one place. Click the card again, or the panel's close
+  button, to collapse it. There's no separate flat list of everything —
+  artists are the entry point.
 - **Delete a release** from inside an artist's panel — removes the DB row
   *and* deletes the underlying audio file from Supabase Storage, so deleted
   songs don't keep counting against your storage quota. Asks for
   confirmation first; cannot be undone.
+- **Support tickets** submitted from the artist dashboard's Support tab show
+  up inside that artist's panel, with a Resolve/Reopen toggle. Artist cards
+  with open tickets show a small blue "N open" badge so you can spot who
+  needs a reply without opening every panel.
 - **Search the roster** by artist name — handy once you have more than a
   handful of registered artists.
 - **Storage usage meter** at the top of the page shows how much of your
