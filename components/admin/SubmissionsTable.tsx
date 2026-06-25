@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, Trash2, X } from 'lucide-react'
 import type { Release, ReleaseStatus } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
 import Card from '@/components/ui/Card'
@@ -11,6 +11,8 @@ interface SubmissionsTableProps {
   releases: Release[]
   passcode: string
   onStatusChange: (releaseId: string, status: ReleaseStatus) => void
+  /** Omit to disable the delete action entirely. */
+  onDelete?: (releaseId: string) => void
   /** Hide the redundant Artist column when the table is already scoped to one artist. */
   showArtistColumn?: boolean
   emptyMessage?: string
@@ -20,6 +22,7 @@ export default function SubmissionsTable({
   releases,
   passcode,
   onStatusChange,
+  onDelete,
   showArtistColumn = true,
   emptyMessage = 'No submissions yet.',
 }: SubmissionsTableProps) {
@@ -46,6 +49,30 @@ export default function SubmissionsTable({
     } catch {
       setErrorId(releaseId)
     } finally {
+      setPendingId(null)
+    }
+  }
+
+  async function deleteRelease(release: Release) {
+    const confirmed = window.confirm(
+      `Delete "${release.song_title}"? This removes it from the catalog and deletes the audio file from Storage. This cannot be undone.`
+    )
+    if (!confirmed) return
+
+    setPendingId(release.id)
+    setErrorId(null)
+
+    try {
+      const response = await fetch(`/api/admin/releases/${release.id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-passcode': passcode },
+      })
+
+      if (!response.ok) throw new Error('Delete failed')
+
+      onDelete?.(release.id)
+    } catch {
+      setErrorId(release.id)
       setPendingId(null)
     }
   }
@@ -105,7 +132,7 @@ export default function SubmissionsTable({
                 <td className="px-5 py-4">
                   <StatusBadge status={release.status} />
                   {errorId === release.id ? (
-                    <p className="mt-1 font-mono text-[10px] font-bold text-punch">Update failed</p>
+                    <p className="mt-1 font-mono text-[10px] font-bold text-punch">Action failed</p>
                   ) : null}
                 </td>
                 <td className="px-5 py-4">
@@ -128,6 +155,17 @@ export default function SubmissionsTable({
                     >
                       <X className="h-4 w-4" />
                     </button>
+                    {onDelete ? (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => deleteRelease(release)}
+                        className="brutal-press flex h-9 w-9 items-center justify-center rounded-md border-[2.5px] border-ink bg-ink text-paper shadow-[2px_2px_0_0_var(--color-ink)] transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
                   </div>
                 </td>
               </tr>

@@ -14,6 +14,7 @@ interface ArtistDetailPanelProps {
   counts: ArtistReleaseCounts
   passcode: string
   onStatusChange: (releaseId: string, status: ReleaseStatus) => void
+  onDelete: (releaseId: string) => void
   onClose: () => void
 }
 
@@ -23,6 +24,7 @@ export default function ArtistDetailPanel({
   counts,
   passcode,
   onStatusChange,
+  onDelete,
   onClose,
 }: ArtistDetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -85,6 +87,7 @@ export default function ArtistDetailPanel({
           releases={releases}
           passcode={passcode}
           onStatusChange={onStatusChange}
+          onDelete={onDelete}
           showArtistColumn={false}
           emptyMessage={`${artist.name} hasn't submitted anything yet.`}
         />
