@@ -106,3 +106,28 @@ create policy "Public upload - songs"
   on storage.objects for insert
   to anon, authenticated
   with check (bucket_id = 'songs');
+
+-- ============================================================================
+-- Storage usage (for the admin control room's storage meter)
+--
+-- The `storage` schema isn't exposed through the normal REST API, so the
+-- app can't just query storage.objects directly. This function lives in
+-- `public` (which is exposed) and reads storage.objects internally — SQL
+-- functions can always see other schemas regardless of REST API exposure.
+-- ============================================================================
+create or replace function public.get_storage_usage()
+returns table (bucket_id text, total_bytes bigint, file_count bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    bucket_id,
+    coalesce(sum((metadata->>'size')::bigint), 0) as total_bytes,
+    count(*) as file_count
+  from storage.objects
+  where bucket_id in ('profiles', 'songs')
+  group by bucket_id;
+$$;
+
+grant execute on function public.get_storage_usage() to service_role;

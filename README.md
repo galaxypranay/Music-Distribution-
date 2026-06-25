@@ -145,6 +145,11 @@ time, never at build time).
   handful of registered artists.
 - **Filter the master submissions table** by status (All / Pending /
   Approved / Rejected) so pending work surfaces quickly as volume grows.
+- **Storage usage meter** at the top of the page shows how much of your
+  Supabase file storage is used (across the `profiles` and `songs` buckets),
+  color-coded as it fills up. Defaults to assuming the 1 GB free-tier
+  allowance — set `STORAGE_LIMIT_GB` in your environment variables if you've
+  upgraded to a paid plan with a different limit.
 
 ## Security notes — read this before going to production
 

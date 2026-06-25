@@ -28,3 +28,10 @@ export interface Ticket {
   status: string
   created_at: string
 }
+
+export interface StorageUsage {
+  usedBytes: number
+  limitBytes: number
+  fileCount: number
+  byBucket: Array<{ bucketId: string; totalBytes: number; fileCount: number }>
+}

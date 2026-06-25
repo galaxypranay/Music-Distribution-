@@ -7,10 +7,11 @@ import AdminGate from '@/components/admin/AdminGate'
 import ArtistRoster, { type ArtistReleaseCounts } from '@/components/admin/ArtistRoster'
 import ArtistDetailPanel from '@/components/admin/ArtistDetailPanel'
 import SubmissionsTable from '@/components/admin/SubmissionsTable'
+import StorageUsageMeter from '@/components/admin/StorageUsageMeter'
 import { cn } from '@/lib/utils'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
-import type { Artist, Release, ReleaseStatus } from '@/lib/types'
+import type { Artist, Release, ReleaseStatus, StorageUsage } from '@/lib/types'
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
 
@@ -25,6 +26,9 @@ export default function AdminPage() {
   // null = "not loaded yet" — distinct from an empty array, which means "loaded, zero rows"
   const [artists, setArtists] = useState<Artist[] | null>(null)
   const [releases, setReleases] = useState<Release[] | null>(null)
+  // Storage usage fails soft: an older Supabase project that hasn't re-run
+  // schema.sql yet just won't show the meter, rather than breaking the page.
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [artistSearch, setArtistSearch] = useState('')
@@ -39,9 +43,10 @@ export default function AdminPage() {
     async function loadAdminData() {
       try {
         const headers = { 'x-admin-passcode': passcode as string }
-        const [artistsRes, releasesRes] = await Promise.all([
+        const [artistsRes, releasesRes, storageRes] = await Promise.all([
           fetch('/api/admin/artists', { headers }),
           fetch('/api/admin/releases', { headers }),
+          fetch('/api/admin/storage', { headers }),
         ])
 
         if (!artistsRes.ok || !releasesRes.ok) {
@@ -56,6 +61,11 @@ export default function AdminPage() {
           setArtists(artistsResult.artists ?? [])
           setReleases(releasesResult.releases ?? [])
           setError(null)
+        }
+
+        if (storageRes.ok && isMounted) {
+          const storageResult = await storageRes.json()
+          setStorageUsage(storageResult as StorageUsage)
         }
       } catch (err) {
         if (isMounted) {
@@ -167,6 +177,12 @@ export default function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-6xl space-y-12">
+        {storageUsage ? (
+          <div className="max-w-sm">
+            <StorageUsageMeter usage={storageUsage} />
+          </div>
+        ) : null}
+
         {error ? (
           <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
             {error}
