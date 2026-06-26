@@ -109,10 +109,51 @@
   animation: fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq-bounce 1s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brutal-press,
   .animate-fade-up {
     transition: none;
     animation: none;
+  }
+
+  .eq-bar {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
+@layer utilities {
+  /* Custom reticle cursor for the dashboard and admin panel. Text fields
+     keep the native text caret so typing still feels normal. */
+  .brutal-cursor {
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij4KICA8ZyBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSI+CiAgICA8bGluZSB4MT0iMTQiIHkxPSIxIiB4Mj0iMTQiIHkyPSIxMCIgLz4KICAgIDxsaW5lIHgxPSIxNCIgeTE9IjE4IiB4Mj0iMTQiIHkyPSIyNyIgLz4KICAgIDxsaW5lIHgxPSIxIiB5MT0iMTQiIHgyPSIxMCIgeTI9IjE0IiAvPgogICAgPGxpbmUgeDE9IjE4IiB5MT0iMTQiIHgyPSIyNyIgeTI9IjE0IiAvPgogIDwvZz4KICA8ZyBzdHJva2U9IiMxNDE0MTQiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIj4KICAgIDxsaW5lIHgxPSIxNCIgeTE9IjEiIHgyPSIxNCIgeTI9IjEwIiAvPgogICAgPGxpbmUgeDE9IjE0IiB5MT0iMTgiIHgyPSIxNCIgeTI9IjI3IiAvPgogICAgPGxpbmUgeDE9IjEiIHkxPSIxNCIgeDI9IjEwIiB5Mj0iMTQiIC8+CiAgICA8bGluZSB4MT0iMTgiIHkxPSIxNCIgeDI9IjI3IiB5Mj0iMTQiIC8+CiAgPC9nPgogIDxjaXJjbGUgY3g9IjE0IiBjeT0iMTQiIHI9IjIuNSIgZmlsbD0iI2ZmZDIzZiIgc3Ryb2tlPSIjMTQxNDE0IiBzdHJva2Utd2lkdGg9IjEuNSIgLz4KPC9zdmc+Cg==") 14 14, crosshair;
+  }
+
+  .brutal-cursor button,
+  .brutal-cursor a,
+  .brutal-cursor [role='button'],
+  .brutal-cursor summary {
+    cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij4KICA8ZyBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSI+CiAgICA8bGluZSB4MT0iMTQiIHkxPSIxIiB4Mj0iMTQiIHkyPSIxMCIgLz4KICAgIDxsaW5lIHgxPSIxNCIgeTE9IjE4IiB4Mj0iMTQiIHkyPSIyNyIgLz4KICAgIDxsaW5lIHgxPSIxIiB5MT0iMTQiIHgyPSIxMCIgeTI9IjE0IiAvPgogICAgPGxpbmUgeDE9IjE4IiB5MT0iMTQiIHgyPSIyNyIgeTI9IjE0IiAvPgogIDwvZz4KICA8ZyBzdHJva2U9IiMxNDE0MTQiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0ic3F1YXJlIj4KICAgIDxsaW5lIHgxPSIxNCIgeTE9IjEiIHgyPSIxNCIgeTI9IjEwIiAvPgogICAgPGxpbmUgeDE9IjE0IiB5MT0iMTgiIHgyPSIxNCIgeTI9IjI3IiAvPgogICAgPGxpbmUgeDE9IjEiIHkxPSIxNCIgeDI9IjEwIiB5Mj0iMTQiIC8+CiAgICA8bGluZSB4MT0iMTgiIHkxPSIxNCIgeDI9IjI3IiB5Mj0iMTQiIC8+CiAgPC9nPgogIDxjaXJjbGUgY3g9IjE0IiBjeT0iMTQiIHI9IjIuNSIgZmlsbD0iI2ZmZDIzZiIgc3Ryb2tlPSIjMTQxNDE0IiBzdHJva2Utd2lkdGg9IjEuNSIgLz4KPC9zdmc+Cg==") 14 14, pointer;
+  }
+
+  .brutal-cursor input,
+  .brutal-cursor textarea,
+  .brutal-cursor select {
+    cursor: text;
   }
 }

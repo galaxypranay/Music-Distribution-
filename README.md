@@ -199,3 +199,19 @@ labeling. The signature motif is the **status badge**, now a literal,
 slightly rotated rubber stamp (canary for pending, lime for approved, punch
 pink for rejected) — fitting, since approving a release is exactly what an
 admin is doing when they click it.
+
+The dashboard and admin panel also use a **custom reticle cursor** (a bold
+black-and-white crosshair with a canary-yellow center dot) instead of the
+default arrow — text fields still show the normal text caret so typing isn't
+affected. Next to the wordmark in the dashboard's top bar, a small
+**animated equalizer** (four bars bouncing in the brand colors) nods to the
+"currently playing" indicator found in most music apps. Both respect
+`prefers-reduced-motion`.
+
+The dashboard and admin panel also use a **custom reticle cursor** (a thick
+black-and-white crosshair with a canary center dot, defined in `globals.css`
+via the `.brutal-cursor` class) instead of the default arrow — text fields
+keep the normal text caret so typing isn't affected. The dashboard header
+has a small **animated equalizer** next to the wordmark (`EqualizerAnimation`
+component), bouncing in the brand's four accent colors — a nod to "currently
+playing" indicators in music apps. Both respect `prefers-reduced-motion`.

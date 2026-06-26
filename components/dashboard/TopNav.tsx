@@ -2,6 +2,7 @@
 
 import { LogOut, User as UserIcon } from 'lucide-react'
 import Logo from '@/components/Logo'
+import EqualizerAnimation from '@/components/EqualizerAnimation'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
 
 export default function TopNav() {
@@ -9,7 +10,10 @@ export default function TopNav() {
 
   return (
     <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b-[3px] border-ink bg-paper px-6 md:px-10">
-      <Logo />
+      <div className="flex items-center gap-4">
+        <Logo />
+        <EqualizerAnimation className="hidden sm:flex" />
+      </div>
 
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-3 rounded-lg border-[3px] border-ink bg-white py-1.5 pl-1.5 pr-4 shadow-[3px_3px_0_0_var(--color-ink)]">
