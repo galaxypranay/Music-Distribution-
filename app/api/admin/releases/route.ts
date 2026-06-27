@@ -14,14 +14,19 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
       .from('releases')
-      .select('*')
+      .select('*, tracks(*)')
       .order('created_at', { ascending: false })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ releases: data })
+    const releases = (data ?? []).map((release) => ({
+      ...release,
+      tracks: [...(release.tracks ?? [])].sort((a, b) => a.track_number - b.track_number),
+    }))
+
+    return NextResponse.json({ releases })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected server error.'
     return NextResponse.json({ error: message }, { status: 500 })

@@ -56,3 +56,32 @@ export function formatBytes(bytes: number): string {
 
   return `${exponent === 0 ? value : value.toFixed(value < 10 ? 1 : 0)} ${units[exponent]}`
 }
+
+/**
+ * Signed whole-day difference between today and a release date.
+ * Positive = days remaining, 0 = today, negative = days since release.
+ * Returns null if there's no date to compare against.
+ */
+export function getDaysUntil(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null
+
+  const target = new Date(dateStr)
+  if (Number.isNaN(target.getTime())) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+
+  const diffMs = target.getTime() - today.getTime()
+  return Math.round(diffMs / (1000 * 60 * 60 * 24))
+}
+
+/** Short human label for getDaysUntil's result, e.g. "in 5 days", "today", "3 days ago". */
+export function formatDaysUntil(days: number | null): string {
+  if (days === null) return '—'
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Tomorrow'
+  if (days === -1) return 'Yesterday'
+  if (days > 0) return `In ${days} days`
+  return `${Math.abs(days)} days ago`
+}

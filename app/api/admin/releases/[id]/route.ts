@@ -2,11 +2,25 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthorized } from '@/lib/admin-auth'
 import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
-import type { ReleaseStatus } from '@/lib/types'
+import type { ReleaseStatus, Track } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-const VALID_STATUSES: ReleaseStatus[] = ['Pending Review', 'Approved', 'Rejected']
+const VALID_STATUSES: ReleaseStatus[] = [
+  'Pending Review',
+  'Approved',
+  'Sent to Platforms',
+  'Live',
+  'Rejected',
+]
+
+interface PatchBody {
+  status?: string
+  rejection_reason?: string | null
+  spotify_url?: string | null
+  apple_music_url?: string | null
+  youtube_url?: string | null
+}
 
 export async function PATCH(
   request: Request,
@@ -18,7 +32,7 @@ export async function PATCH(
 
   const { id } = await params
 
-  let body: { status?: string }
+  let body: PatchBody
   try {
     body = await request.json()
   } catch {
@@ -32,21 +46,38 @@ export async function PATCH(
     )
   }
 
+  const update: Record<string, unknown> = { status: body.status }
+
+  // A stale rejection reason from a previous cycle shouldn't linger once
+  // the release moves on to something other than Rejected.
+  update.rejection_reason = body.status === 'Rejected' ? body.rejection_reason ?? null : null
+
+  if (body.status === 'Live') {
+    update.spotify_url = body.spotify_url ?? null
+    update.apple_music_url = body.apple_music_url ?? null
+    update.youtube_url = body.youtube_url ?? null
+  }
+
   try {
     const supabase = getSupabaseAdminClient()
 
     const { data, error } = await supabase
       .from('releases')
-      .update({ status: body.status })
+      .update(update)
       .eq('id', id)
-      .select('*')
+      .select('*, tracks(*)')
       .single()
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ release: data })
+    return NextResponse.json({
+      release: {
+        ...data,
+        tracks: [...(data.tracks ?? [])].sort((a, b) => a.track_number - b.track_number),
+      },
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected server error.'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -66,37 +97,46 @@ export async function DELETE(
   try {
     const supabase = getSupabaseAdminClient()
 
-    // Delete the DB row first — that's the part the user actually sees, so
-    // it should never appear to "fail" because of a Storage hiccup.
-    const { data: deletedRelease, error: deleteError } = await supabase
+    // Read everything we need to clean up Storage *before* deleting — once
+    // the release row is gone, cascading deletes take the tracks (and
+    // their URLs) with it.
+    const { data: release, error: fetchError } = await supabase
       .from('releases')
-      .delete()
+      .select('*, tracks(*)')
       .eq('id', id)
-      .select('*')
       .single()
+
+    if (fetchError || !release) {
+      return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
+    }
+
+    const { error: deleteError } = await supabase.from('releases').delete().eq('id', id)
 
     if (deleteError) {
       return NextResponse.json({ error: deleteError.message }, { status: 500 })
     }
 
-    // Best-effort: also remove the underlying audio file so it doesn't sit
-    // around counting against Supabase Storage quota with nothing pointing
-    // to it. If this fails for any reason, the release is still gone from
-    // the catalog — we just log it rather than failing the whole request.
-    if (deletedRelease?.audio_url) {
-      const parsed = parseStoragePathFromPublicUrl(deletedRelease.audio_url)
-      if (parsed) {
-        const { error: storageError } = await supabase.storage
-          .from(parsed.bucket)
-          .remove([parsed.path])
+    // Best-effort Storage cleanup — the release is already gone from the
+    // catalog at this point regardless of what happens below.
+    const urlsToClean = [
+      release.cover_art_url,
+      ...((release.tracks ?? []) as Track[]).map((track) => track.audio_url),
+    ].filter((url): url is string => Boolean(url))
 
-        if (storageError) {
-          console.error('Storage cleanup failed for release', id, storageError.message)
-        }
+    for (const url of urlsToClean) {
+      const parsed = parseStoragePathFromPublicUrl(url)
+      if (!parsed) continue
+
+      const { error: storageError } = await supabase.storage
+        .from(parsed.bucket)
+        .remove([parsed.path])
+
+      if (storageError) {
+        console.error('Storage cleanup failed for release', id, storageError.message)
       }
     }
 
-    return NextResponse.json({ release: deletedRelease })
+    return NextResponse.json({ release })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected server error.'
     return NextResponse.json({ error: message }, { status: 500 })

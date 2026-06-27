@@ -1,17 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ExternalLink, Music2, RotateCcw } from 'lucide-react'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
+import ReleaseForm from '@/components/dashboard/ReleaseForm'
 import { formatDate } from '@/lib/utils'
-import type { Release } from '@/lib/types'
+import type { ReleaseWithTracks } from '@/lib/types'
 import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
 import StatusBadge from '@/components/StatusBadge'
 
 export default function StatusPage() {
   const { artist } = useArtistSession()
-  const [releases, setReleases] = useState<Release[]>([])
+  const [releases, setReleases] = useState<ReleaseWithTracks[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [resubmittingId, setResubmittingId] = useState<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -37,6 +41,17 @@ export default function StatusPage() {
       isMounted = false
     }
   }, [artist.id])
+
+  function handleResubmitSuccess() {
+    setResubmittingId(null)
+    setIsLoading(true)
+    setError(null)
+    fetch(`/api/releases?artist_id=${artist.id}`)
+      .then((res) => res.json())
+      .then((result) => setReleases(result.releases ?? []))
+      .catch(() => setError('Resubmitted, but could not refresh the list. Reload the page.'))
+      .finally(() => setIsLoading(false))
+  }
 
   return (
     <div className="mx-auto max-w-4xl animate-fade-up">
@@ -68,39 +83,112 @@ export default function StatusPage() {
           </p>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b-[3px] border-ink bg-canary">
-                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
-                  Song title
-                </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
-                  Genre
-                </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
-                  Release date
-                </th>
-                <th className="px-5 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {releases.map((release) => (
-                <tr key={release.id} className="border-b-[2.5px] border-ink last:border-0">
-                  <td className="px-5 py-4 font-bold text-ink">{release.song_title}</td>
-                  <td className="px-5 py-4 font-medium text-ink-soft">{release.genre ?? '—'}</td>
-                  <td className="px-5 py-4 font-medium text-ink-soft">{formatDate(release.release_date)}</td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={release.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+        <div className="flex flex-col gap-5">
+          {releases.map((release) =>
+            resubmittingId === release.id ? (
+              <div key={release.id}>
+                <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+                  Resubmitting &ldquo;{release.title}&rdquo;
+                </p>
+                <ReleaseForm
+                  mode="resubmit"
+                  initialRelease={release}
+                  onSuccess={handleResubmitSuccess}
+                  onCancel={() => setResubmittingId(null)}
+                />
+              </div>
+            ) : (
+              <Card key={release.id} className="overflow-hidden">
+                <div className="flex flex-wrap items-start gap-4 p-5">
+                  {release.cover_art_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={release.cover_art_url}
+                      alt={release.title}
+                      className="h-20 w-20 shrink-0 rounded-md border-[2.5px] border-ink object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-paper">
+                      <Music2 className="h-7 w-7 text-ink-faint" />
+                    </span>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-display text-lg uppercase text-ink">{release.title}</p>
+                      <span className="rounded-md border-2 border-ink bg-paper px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-ink">
+                        {release.release_type}
+                      </span>
+                      <StatusBadge status={release.status} />
+                    </div>
+                    <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
+                      Release date: {formatDate(release.release_date)}
+                    </p>
+
+                    <ul className="mt-3 flex flex-col gap-1">
+                      {release.tracks.map((track) => (
+                        <li key={track.id} className="text-sm font-medium text-ink-soft">
+                          {track.track_number}. {track.song_title}
+                          {track.genre ? (
+                            <span className="text-ink-faint"> — {track.genre}</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {release.status === 'Rejected' && release.rejection_reason ? (
+                      <p className="mt-3 rounded-md border-2 border-ink bg-punch/10 px-3 py-2 text-sm font-medium text-ink">
+                        <span className="font-bold text-punch">Why: </span>
+                        {release.rejection_reason}
+                      </p>
+                    ) : null}
+
+                    {release.status === 'Rejected' ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="mt-3"
+                        onClick={() => setResubmittingId(release.id)}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Resubmit
+                      </Button>
+                    ) : null}
+
+                    {release.status === 'Live' ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {release.spotify_url ? (
+                          <LiveLink href={release.spotify_url} label="Spotify" />
+                        ) : null}
+                        {release.apple_music_url ? (
+                          <LiveLink href={release.apple_music_url} label="Apple Music" />
+                        ) : null}
+                        {release.youtube_url ? (
+                          <LiveLink href={release.youtube_url} label="YouTube" />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </Card>
+            )
+          )}
+        </div>
       )}
     </div>
+  )
+}
+
+function LiveLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="brutal-press flex items-center gap-1.5 rounded-md border-[2.5px] border-ink bg-lime px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors hover:bg-lime-deep"
+    >
+      Listen on {label}
+      <ExternalLink className="h-3 w-3" />
+    </a>
   )
 }

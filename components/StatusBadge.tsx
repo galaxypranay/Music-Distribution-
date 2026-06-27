@@ -3,13 +3,17 @@ import type { ReleaseStatus } from '@/lib/types'
 
 const FILL_STYLES: Record<ReleaseStatus, string> = {
   'Pending Review': 'bg-canary text-ink',
-  Approved: 'bg-lime text-ink',
+  Approved: 'bg-cobalt text-white',
+  'Sent to Platforms': 'bg-ink text-paper',
+  Live: 'bg-lime text-ink',
   Rejected: 'bg-punch text-white',
 }
 
 const LABELS: Record<ReleaseStatus, string> = {
   'Pending Review': 'Pending',
   Approved: 'Approved',
+  'Sent to Platforms': 'Sent',
+  Live: 'Live',
   Rejected: 'Rejected',
 }
 

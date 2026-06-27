@@ -12,7 +12,7 @@ import ArtistDetailPanel from '@/components/admin/ArtistDetailPanel'
 import StorageUsageMeter from '@/components/admin/StorageUsageMeter'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
-import type { Artist, Release, ReleaseStatus, StorageUsage, Ticket, TicketStatus } from '@/lib/types'
+import type { Artist, ReleaseWithTracks, StorageUsage, Ticket, TicketStatus } from '@/lib/types'
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
 
@@ -22,7 +22,7 @@ export default function AdminPage() {
 
   // null = "not loaded yet" — distinct from an empty array, which means "loaded, zero rows"
   const [artists, setArtists] = useState<Artist[] | null>(null)
-  const [releases, setReleases] = useState<Release[] | null>(null)
+  const [releases, setReleases] = useState<ReleaseWithTracks[] | null>(null)
   const [tickets, setTickets] = useState<Ticket[] | null>(null)
   // Storage usage fails soft: an older Supabase project that hasn't re-run
   // schema.sql yet just won't show the meter, rather than breaking the page.
@@ -90,12 +90,16 @@ export default function AdminPage() {
         total: 0,
         pending: 0,
         approved: 0,
+        sent: 0,
+        live: 0,
         rejected: 0,
       }
 
       entry.total += 1
       if (release.status === 'Pending Review') entry.pending += 1
       if (release.status === 'Approved') entry.approved += 1
+      if (release.status === 'Sent to Platforms') entry.sent += 1
+      if (release.status === 'Live') entry.live += 1
       if (release.status === 'Rejected') entry.rejected += 1
 
       counts[release.artist_id] = entry
@@ -149,11 +153,9 @@ export default function AdminPage() {
     setSelectedArtistId(null)
   }
 
-  function handleStatusChange(releaseId: string, status: ReleaseStatus) {
+  function handleReleaseChange(updatedRelease: ReleaseWithTracks) {
     setReleases((prev) =>
-      prev
-        ? prev.map((release) => (release.id === releaseId ? { ...release, status } : release))
-        : prev
+      prev ? prev.map((release) => (release.id === updatedRelease.id ? updatedRelease : release)) : prev
     )
   }
 
@@ -256,13 +258,15 @@ export default function AdminPage() {
                     total: 0,
                     pending: 0,
                     approved: 0,
+                    sent: 0,
+                    live: 0,
                     rejected: 0,
                   }
                 }
                 tickets={selectedArtistTickets}
                 ticketCounts={ticketCountsByArtistId[selectedArtist.id] ?? { total: 0, open: 0 }}
                 passcode={passcode}
-                onStatusChange={handleStatusChange}
+                onReleaseChange={handleReleaseChange}
                 onDelete={handleDeleteRelease}
                 onTicketStatusChange={handleTicketStatusChange}
                 onClose={() => setSelectedArtistId(null)}

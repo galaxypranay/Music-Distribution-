@@ -7,6 +7,8 @@ export interface ArtistReleaseCounts {
   total: number
   pending: number
   approved: number
+  sent: number
+  live: number
   rejected: number
 }
 
