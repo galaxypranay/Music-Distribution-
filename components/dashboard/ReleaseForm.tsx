@@ -249,7 +249,7 @@ export default function ReleaseForm({
                 label="Release type"
                 required
                 value={releaseType}
-                onChange={(e) => handleReleaseTypeChange(e.target.value as ReleaseType)}
+                onChange={(value) => handleReleaseTypeChange(value as ReleaseType)}
               >
                 {RELEASE_TYPES.map((option) => (
                   <option key={option} value={option}>
@@ -324,7 +324,7 @@ export default function ReleaseForm({
                   label="Genre"
                   required
                   value={track.genre}
-                  onChange={(e) => updateTrack(track.key, { genre: e.target.value })}
+                  onChange={(value) => updateTrack(track.key, { genre: value })}
                 >
                   {GENRES.map((option) => (
                     <option key={option} value={option}>
