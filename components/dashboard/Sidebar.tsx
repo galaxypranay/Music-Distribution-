@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, LifeBuoy, UploadCloud } from 'lucide-react'
+import { BarChart3, Home, LifeBuoy, UploadCloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const TABS = [
+  { href: '/dashboard/home', label: 'Home', icon: Home },
   { href: '/dashboard/upload', label: 'Upload', icon: UploadCloud },
   { href: '/dashboard/status', label: 'Status', icon: BarChart3 },
   { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
