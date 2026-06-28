@@ -12,12 +12,16 @@ Built with Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Supabase.
 
 ## ⚠️ Upgrading an existing Spilrix project?
 
-If you already have this running in production with real data, **do not run
-`supabase/schema.sql`** — it assumes a brand-new database. Run
-**`supabase/migration-ep-album.sql`** instead, once, in your existing
-project's SQL Editor. It safely upgrades your existing `releases` rows (each
-becomes a "Single" with its one song carried over into the new `tracks`
-table) without losing anything. See that file's comments for details.
+Run these migration scripts **in order**, once each, in your Supabase SQL
+Editor — do NOT run `supabase/schema.sql` on an existing project (that file
+is for brand-new databases only):
+
+1. `supabase/migration-ep-album.sql` — if you haven't already (Release +
+   Track structure, EP/Album support).
+2. `supabase/migration-profile-uid-scheduled-delete.sql` — artist UID, social
+   links, and the scheduled-deletion columns on releases.
+
+Each script is safe to run on a database with real data already in it.
 
 ---
 
@@ -60,7 +64,8 @@ EP moves through review together, the way it would with a real distributor.
 ```
 Release (Single / EP / Album)
   title, cover_art_url, release_date, status, rejection_reason,
-  spotify_url, apple_music_url, youtube_url
+  spotify_url, apple_music_url, youtube_url,
+  scheduled_deletion_at, deletion_reason
   │
   └── Tracks (1 or more)
         song_title, genre, audio_url, explicit, songwriter, track_number
@@ -83,9 +88,25 @@ Pending Review → Approved → Sent to Platforms → Live
   "Listen on ___" buttons.
 - **Rejected** — comes with a reason you write when rejecting. The artist
   sees that reason on their Status page along with a **Resubmit** button,
-  which reopens the same form (pre-filled) to fix and resend — title, cover
-  art, release date, and every track (including replacing audio files) can
-  all be edited. Resubmitting resets status to Pending Review.
+  which reopens the same form (pre-filled) to fix and resend. Resubmitting
+  resets status to Pending Review.
+
+### Deletion is scheduled, not instant
+
+Clicking "Delete" on a release doesn't remove it right away. Admin writes a
+reason and picks a window (24 or 48 hours). The release stays visible — on
+both the admin panel and the artist's own Status page — with a warning
+banner showing the deadline and reason, and admin can **cancel** the
+scheduled deletion any time before it fires.
+
+There's no dedicated cron job behind this. Vercel's Hobby plan only runs
+scheduled functions once a day with imprecise timing, which isn't a good fit
+for a 24h/48h deadline. Instead, `lib/process-scheduled-deletions.ts` runs at
+the top of both `GET /api/releases` and `GET /api/admin/releases` — so a
+release past its deadline gets permanently deleted (DB rows + every Storage
+file) the next time anyone loads a page that lists releases. For an actively
+used app this is effectively real-time; if nobody opens the site for a few
+days, cleanup just waits for the next visit.
 
 ## 3. Folder structure
 
@@ -96,15 +117,20 @@ app/
 ├── globals.css                    Design tokens (Tailwind v4 @theme)
 ├── dashboard/
 │   ├── layout.tsx                 Session guard + TopNav + Sidebar shell
-│   ├── page.tsx                   Redirects to /dashboard/upload
-│   ├── upload/page.tsx            Tab A — submit a release (ReleaseForm)
-│   ├── status/page.tsx            Tab B — track releases, resubmit, live links
-│   └── support/page.tsx           Tab C — open a support ticket
+│   ├── page.tsx                   Home — welcome + quick stats
+│   ├── upload/page.tsx            Upload tab (ReleaseForm)
+│   ├── status/page.tsx            Status tab — resubmit, live links, deletion warning
+│   ├── support/page.tsx           Support tab — submit a ticket
+│   ├── analytics/page.tsx         Release counts by type/status + timeline
+│   ├── royalties/page.tsx         "Coming soon" placeholder
+│   └── notifications/page.tsx     "Coming soon" placeholder
 ├── spilrix-admin/
 │   ├── layout.tsx                 noindex metadata
 │   └── page.tsx                   Passcode gate + roster + artist drill-down
 └── api/
-    ├── artists/route.ts           POST create artist
+    ├── artists/
+    │   ├── route.ts                POST create artist
+    │   └── [id]/route.ts           GET/PATCH own profile (name/photo/social links)
     ├── releases/
     │   ├── route.ts                POST create release+tracks · GET own releases
     │   └── [id]/route.ts           PATCH resubmit a rejected release (artist-owned)
@@ -118,7 +144,10 @@ app/
         │   └── [id]/route.ts       PATCH ticket status (passcode-protected)
         └── releases/
             ├── route.ts            GET all releases+tracks (passcode-protected)
-            └── [id]/route.ts       PATCH status lifecycle · DELETE (+ Storage cleanup)
+            └── [id]/
+                ├── route.ts             PATCH status lifecycle
+                ├── schedule-deletion/   POST set deadline + reason
+                └── cancel-deletion/     POST undo a scheduled deletion
 
 components/
 ├── ui/                            Button, Card, Field (Input/Select/Textarea)
@@ -127,11 +156,13 @@ components/
 ├── EqualizerAnimation.tsx         Animated bars next to the dashboard wordmark
 ├── dashboard/
 │   ├── SessionProvider, TopNav, Sidebar, MobileTabs
-│   └── ReleaseForm.tsx            Shared create/resubmit form (release + tracks)
+│   ├── ReleaseForm.tsx            Shared create/resubmit form (release + tracks)
+│   ├── ProfilePanel.tsx           View/edit profile modal — UID, photo, social links
+│   └── ComingSoon.tsx             Shared placeholder for Royalties/Notifications
 └── admin/
-    ├── AdminGate, ArtistRoster, ArtistDetailPanel
+    ├── AdminGate, ArtistRoster (UID + search), ArtistDetailPanel (tickets toggle)
     ├── ReleaseManager.tsx          Per-artist release cards: full status actions,
-    │                               ZIP download, days-until-release indicator
+    │                               scheduled deletion, ZIP download, days-until-release
     └── TicketsList.tsx
 
 lib/
@@ -139,16 +170,18 @@ lib/
 │   ├── client.ts                  Browser client (anon key) — Storage only
 │   ├── server.ts                  Server client (service role) — API routes only
 │   └── storage-path.ts            Public URL → {bucket, path} parser (for deletes)
+├── process-scheduled-deletions.ts Finds + permanently deletes overdue releases
 ├── browser-storage.ts             Notifying localStorage/sessionStorage helpers
 ├── use-browser-storage-value.ts   useSyncExternalStore-based read hook
 ├── session.ts                     Artist session save/get/clear
 ├── admin-auth.ts                  Passcode header check for /api/admin/**
 ├── types.ts                       Artist / Release / Track / Ticket types
-└── utils.ts                       cn, date formatting, slugify, getDaysUntil, formatBytes
+└── utils.ts                       cn, dates, slugify, getDaysUntil, formatBytes
 
 supabase/
-├── schema.sql                     Fresh-install schema (new projects only)
-└── migration-ep-album.sql         Upgrade path for existing projects (run this instead)
+├── schema.sql                                    Fresh-install schema (new projects only)
+├── migration-ep-album.sql                        Upgrade: Release+Track structure
+└── migration-profile-uid-scheduled-delete.sql    Upgrade: UID, social links, scheduled delete
 ```
 
 ## 4. Set up Supabase
@@ -158,9 +191,8 @@ supabase/
 2. Open **SQL Editor**, paste the contents of `supabase/schema.sql`, and run it.
 3. Go to **Settings → API** and copy the values described below.
 
-**Existing project (already has artists/releases):** run
-`supabase/migration-ep-album.sql` instead — see the warning at the top of
-this README.
+**Existing project:** run both migration scripts in order — see the warning
+at the top of this README.
 
 Either way, you'll need from **Settings → API**:
 - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
@@ -207,24 +239,38 @@ at build time).
 
 ---
 
+## Artist dashboard
+
+Sidebar tabs: **Home** (welcome + quick stats), **Upload**, **Status**,
+**Support**, **Analytics** (release counts by type/status + a submission
+timeline), plus **Royalties** and **Notifications** as disabled "Coming
+soon" entries (click shows a brief toast, doesn't navigate).
+
+Clicking the profile photo/name in the top bar opens the **Profile panel**:
+your UID (with a copy button), name, photo, "member since" date, social
+links (Instagram/YouTube/Spotify), an edit mode for all of the above, and
+Sign out.
+
 ## Admin panel features
 
 - **Click an artist card** to open a panel scoped to just that artist —
-  their releases and support tickets, all in one place.
+  their releases and support tickets, all in one place. Each artist's card
+  shows their **UID**, and the search box matches on UID as well as name.
 - **Full release lifecycle controls**: Approve, Reject (with a reason the
   artist will see), Mark Sent, Mark Live (attach Spotify/Apple Music/YouTube
-  links), and Delete (removes the DB rows *and* every associated file —
-  cover art + all track audio — from Supabase Storage).
+  links), and **Delete** — which opens a reason + 24h/48h window picker
+  rather than deleting immediately (see "Deletion is scheduled, not
+  instant" above). A scheduled deletion can be cancelled any time before
+  its deadline.
 - **Download ZIP** on any release — bundles the cover art and every track's
   audio file into one .zip, built right in your browser (no server-side
   size/time limits to worry about). This is the file you'd hand off for
   manual upload to Spotify/Apple Music/etc.
 - **Days-until-release badge** on every release, and the list is sorted by
-  urgency (soonest release date first) so the most time-sensitive work
-  surfaces automatically. Overdue, not-yet-live releases are flagged in pink.
+  urgency (soonest release date first).
 - **Support tickets** show up inside each artist's panel with a
-  Resolve/Reopen toggle. Artist cards show a small blue "N open" badge.
-- **Search the roster** by artist name.
+  Resolve/Reopen toggle, and a **show/hide** button to collapse that section.
+  Artist cards show a small blue "N open" badge.
 - **Storage usage meter** at the top of the page, color-coded as it fills up.
   Defaults to the 1 GB free-tier allowance — set `STORAGE_LIMIT_GB` if you've
   upgraded plans.
@@ -265,15 +311,15 @@ the shadow collapses and the element shifts down-right on click. It leans
 into a punk-flyer/zine energy, which fits an indie music distributor better
 than a slick SaaS look. `Archivo Black` carries the wordmark and headlines;
 `Space Grotesk` handles UI text; `JetBrains Mono` is used for anything
-catalog-like — status stamps, timestamps — echoing a cassette tape's printed
-labeling. The signature motif is the **status badge**: a slightly rotated
-rubber stamp whose color tracks the release lifecycle (canary → cobalt → ink
-→ lime, with punch as the rejected branch).
+catalog-like — status stamps, timestamps, UIDs — echoing a cassette tape's
+printed labeling. The signature motif is the **status badge**: a slightly
+rotated rubber stamp whose color tracks the release lifecycle (canary →
+cobalt → ink → lime, with punch as the rejected branch).
 
 The dashboard and admin panel also use a **custom reticle cursor** (a thick
 black-and-white crosshair with a canary center dot, defined in `globals.css`
 via the `.brutal-cursor` class) instead of the default arrow — text fields
 keep the normal text caret so typing isn't affected. The dashboard header has
 a small **animated equalizer** next to the wordmark (`EqualizerAnimation`
-component), bouncing in the brand's four accent colors — a nod to "currently
-playing" indicators in music apps. Both respect `prefers-reduced-motion`.
+component), bouncing in the brand's four accent colors. Both respect
+`prefers-reduced-motion`.
