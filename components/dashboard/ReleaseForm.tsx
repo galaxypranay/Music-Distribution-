@@ -52,7 +52,7 @@ function emptyTrack(): TrackFormState {
 }
 
 interface ReleaseFormProps {
-  mode: 'create' | 'edit'
+  mode: 'create' | 'resubmit'
   initialRelease?: ReleaseWithTracks
   onSuccess: () => void
   onCancel?: () => void
@@ -94,7 +94,6 @@ export default function ReleaseForm({
   const [error, setError] = useState<string | null>(null)
 
   const isSingle = releaseType === 'Single'
-  const initialStatus = initialRelease?.status
 
   function handleCoverChange(file: File | null) {
     setCoverFile(file)
@@ -120,7 +119,8 @@ export default function ReleaseForm({
     }
   }
 
-  async function performSave(targetStatus?: 'Draft' | 'Pending Review') {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setError(null)
 
     const trimmedTitle = title.trim()
@@ -188,10 +188,10 @@ export default function ReleaseForm({
         cover_art_url: coverArtUrl,
         release_date: releaseDate || null,
         tracks: trackPayloads,
-        ...(targetStatus ? { status: targetStatus } : {}),
       }
 
-      const endpoint = mode === 'create' ? '/api/releases' : `/api/releases/${initialRelease!.id}`
+      const endpoint =
+        mode === 'create' ? '/api/releases' : `/api/releases/${initialRelease!.id}`
       const method = mode === 'create' ? 'POST' : 'PATCH'
 
       const response = await fetch(endpoint, {
@@ -203,7 +203,7 @@ export default function ReleaseForm({
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error ?? 'Could not save the release.')
+        throw new Error(result.error ?? 'Could not submit the release.')
       }
 
       onSuccess()
@@ -214,26 +214,9 @@ export default function ReleaseForm({
     }
   }
 
-  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const primaryStatus =
-      mode === 'create' || initialStatus === 'Draft' ? 'Pending Review' : undefined
-    performSave(primaryStatus)
-  }
-
-  const showDraftButton = mode === 'create' || initialStatus === 'Draft'
-  const primaryLabel =
-    mode === 'create'
-      ? 'Submit for review'
-      : initialStatus === 'Draft'
-        ? 'Save & submit'
-        : initialStatus === 'Rejected'
-          ? 'Resubmit for review'
-          : 'Save changes'
-
   return (
     <Card className="p-6 md:p-8">
-      <form onSubmit={handleFormSubmit} className="flex flex-col gap-8">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
         <div className="grid gap-6 sm:grid-cols-[auto_1fr]">
           <div>
             <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
@@ -266,7 +249,7 @@ export default function ReleaseForm({
                 label="Release type"
                 required
                 value={releaseType}
-                onChange={(e) => handleReleaseTypeChange(e.target.value as ReleaseType)}
+                onChange={(value) => handleReleaseTypeChange(value as ReleaseType)}
               >
                 {RELEASE_TYPES.map((option) => (
                   <option key={option} value={option}>
@@ -341,7 +324,7 @@ export default function ReleaseForm({
                   label="Genre"
                   required
                   value={track.genre}
-                  onChange={(e) => updateTrack(track.key, { genre: e.target.value })}
+                  onChange={(value) => updateTrack(track.key, { genre: value })}
                 >
                   {GENRES.map((option) => (
                     <option key={option} value={option}>
@@ -407,20 +390,14 @@ export default function ReleaseForm({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-3">
           <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : primaryLabel}
+            {isSubmitting
+              ? 'Submitting…'
+              : mode === 'create'
+                ? 'Submit for review'
+                : 'Resubmit for review'}
           </Button>
-          {showDraftButton ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isSubmitting}
-              onClick={() => performSave('Draft')}
-            >
-              Save as draft
-            </Button>
-          ) : null}
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
               Cancel
