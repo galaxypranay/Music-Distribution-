@@ -36,6 +36,7 @@ export default function AnalyticsPage() {
   }
 
   const byStatus = {
+    Draft: releases.filter((r) => r.status === 'Draft').length,
     'Pending Review': releases.filter((r) => r.status === 'Pending Review').length,
     Approved: releases.filter((r) => r.status === 'Approved').length,
     'Sent to Platforms': releases.filter((r) => r.status === 'Sent to Platforms').length,
@@ -92,7 +93,7 @@ export default function AnalyticsPage() {
             <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
               By status
             </p>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {Object.entries(byStatus).map(([status, count]) => (
                 <Card key={status} className="p-4 text-center">
                   <p className="font-display text-3xl text-ink">{count}</p>

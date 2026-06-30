@@ -31,6 +31,7 @@ export default function HomePage() {
   }, [artist.id])
 
   const total = releases.length
+  const drafts = releases.filter((r) => r.status === 'Draft').length
   const pending = releases.filter((r) => r.status === 'Pending Review').length
   const live = releases.filter((r) => r.status === 'Live').length
   const rejected = releases.filter((r) => r.status === 'Rejected').length
@@ -53,8 +54,9 @@ export default function HomePage() {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard label="Total releases" value={total} fill="bg-white" />
+            <StatCard label="Drafts" value={drafts} fill="bg-white" />
             <StatCard label="Pending" value={pending} fill="bg-canary" />
             <StatCard label="Live" value={live} fill="bg-lime" />
             <StatCard label="Rejected" value={rejected} fill="bg-punch text-white" />

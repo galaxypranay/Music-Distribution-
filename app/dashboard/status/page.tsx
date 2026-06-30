@@ -1,7 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, Hourglass, Music2, RotateCcw } from 'lucide-react'
+import {
+  Copy,
+  ExternalLink,
+  Hourglass,
+  Music2,
+  Pencil,
+  RotateCcw,
+  Send,
+  Trash2,
+} from 'lucide-react'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
 import ReleaseForm from '@/components/dashboard/ReleaseForm'
 import { formatDate, formatDateTime } from '@/lib/utils'
@@ -10,47 +19,112 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import StatusBadge from '@/components/StatusBadge'
 
+const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Rejected']
+const DELETABLE_STATUSES = ['Draft', 'Pending Review']
+
 export default function StatusPage() {
   const { artist } = useArtistSession()
   const [releases, setReleases] = useState<ReleaseWithTracks[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [resubmittingId, setResubmittingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  function loadReleases() {
+    setIsLoading(true)
+    setError(null)
+    return fetch(`/api/releases?artist_id=${artist.id}`)
+      .then((res) => res.json())
+      .then((result) => setReleases(result.releases ?? []))
+      .catch(() => setError('Could not load releases.'))
+      .finally(() => setIsLoading(false))
+  }
 
   useEffect(() => {
     let isMounted = true
 
-    async function loadReleases() {
-      try {
-        const response = await fetch(`/api/releases?artist_id=${artist.id}`)
-        const result = await response.json()
-
-        if (!response.ok) throw new Error(result.error ?? 'Could not load releases.')
+    fetch(`/api/releases?artist_id=${artist.id}`)
+      .then((res) => res.json())
+      .then((result) => {
         if (isMounted) setReleases(result.releases ?? [])
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Could not load releases.')
-        }
-      } finally {
+      })
+      .catch(() => {
+        if (isMounted) setError('Could not load releases.')
+      })
+      .finally(() => {
         if (isMounted) setIsLoading(false)
-      }
-    }
+      })
 
-    loadReleases()
     return () => {
       isMounted = false
     }
   }, [artist.id])
 
-  function handleResubmitSuccess() {
-    setResubmittingId(null)
-    setIsLoading(true)
+  function handleEditSuccess() {
+    setEditingId(null)
+    loadReleases()
+  }
+
+  async function handleSubmitDraft(release: ReleaseWithTracks) {
+    setBusyId(release.id)
     setError(null)
-    fetch(`/api/releases?artist_id=${artist.id}`)
-      .then((res) => res.json())
-      .then((result) => setReleases(result.releases ?? []))
-      .catch(() => setError('Resubmitted, but could not refresh the list. Reload the page.'))
-      .finally(() => setIsLoading(false))
+
+    try {
+      const response = await fetch(`/api/releases/${release.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist_id: artist.id }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? 'Could not submit.')
+      setReleases((prev) => prev.map((r) => (r.id === release.id ? result.release : r)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit for review.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDuplicate(release: ReleaseWithTracks) {
+    setBusyId(release.id)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/releases/${release.id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist_id: artist.id }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? 'Could not duplicate.')
+      setReleases((prev) => [result.release, ...prev])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not duplicate the release.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDelete(release: ReleaseWithTracks) {
+    const confirmed = window.confirm(`Delete "${release.title}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    setBusyId(release.id)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `/api/releases/${release.id}?artist_id=${artist.id}`,
+        { method: 'DELETE' }
+      )
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? 'Could not delete.')
+      setReleases((prev) => prev.filter((r) => r.id !== release.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the release.')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   return (
@@ -61,7 +135,7 @@ export default function StatusPage() {
         </p>
         <h1 className="mt-3 font-display text-3xl uppercase text-ink">Submission status</h1>
         <p className="mt-2 text-sm font-medium text-ink-soft">
-          Every release you&apos;ve submitted, and where it stands.
+          Every release you&apos;ve submitted (and every draft), and where it stands.
         </p>
       </header>
 
@@ -84,17 +158,21 @@ export default function StatusPage() {
         </Card>
       ) : (
         <div className="flex flex-col gap-5">
-          {releases.map((release) =>
-            resubmittingId === release.id ? (
+          {releases.map((release) => {
+            const isBusy = busyId === release.id
+            const canEdit = EDITABLE_STATUSES.includes(release.status)
+            const canDelete = DELETABLE_STATUSES.includes(release.status)
+
+            return editingId === release.id ? (
               <div key={release.id}>
                 <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
-                  Resubmitting &ldquo;{release.title}&rdquo;
+                  Editing &ldquo;{release.title}&rdquo;
                 </p>
                 <ReleaseForm
-                  mode="resubmit"
+                  mode="edit"
                   initialRelease={release}
-                  onSuccess={handleResubmitSuccess}
-                  onCancel={() => setResubmittingId(null)}
+                  onSuccess={handleEditSuccess}
+                  onCancel={() => setEditingId(null)}
                 />
               </div>
             ) : (
@@ -153,18 +231,6 @@ export default function StatusPage() {
                       </p>
                     ) : null}
 
-                    {release.status === 'Rejected' ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="mt-3"
-                        onClick={() => setResubmittingId(release.id)}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        Resubmit
-                      </Button>
-                    ) : null}
-
                     {release.status === 'Live' ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {release.spotify_url ? (
@@ -178,11 +244,67 @@ export default function StatusPage() {
                         ) : null}
                       </div>
                     ) : null}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {release.status === 'Draft' ? (
+                        <Button
+                          type="button"
+                          isLoading={isBusy}
+                          disabled={isBusy}
+                          onClick={() => handleSubmitDraft(release)}
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          Submit for review
+                        </Button>
+                      ) : null}
+                      {release.status === 'Rejected' ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setEditingId(release.id)}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          Resubmit
+                        </Button>
+                      ) : null}
+                      {canEdit && release.status !== 'Rejected' ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setEditingId(release.id)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        isLoading={isBusy}
+                        disabled={isBusy}
+                        onClick={() => handleDuplicate(release)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Duplicate
+                      </Button>
+                      {canDelete ? (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          isLoading={isBusy}
+                          disabled={isBusy}
+                          onClick={() => handleDelete(release)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </Card>
             )
-          )}
+          })}
         </div>
       )}
     </div>

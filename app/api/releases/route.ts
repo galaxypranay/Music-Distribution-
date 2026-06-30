@@ -22,6 +22,8 @@ interface CreateReleaseBody {
   release_type?: string
   cover_art_url?: string | null
   release_date?: string | null
+  /** Defaults to 'Pending Review'. Only 'Draft' may be passed explicitly. */
+  status?: 'Draft' | 'Pending Review'
   tracks?: IncomingTrack[]
 }
 
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
     )
   }
 
+  const status = body.status === 'Draft' ? 'Draft' : 'Pending Review'
+
   if (!tracks || tracks.length === 0) {
     return NextResponse.json({ error: 'At least one track is required.' }, { status: 400 })
   }
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
-        status: 'Pending Review',
+        status,
       })
       .select('*')
       .single()

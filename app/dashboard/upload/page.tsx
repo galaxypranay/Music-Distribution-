@@ -14,7 +14,7 @@ export default function UploadPage() {
         </p>
         <h1 className="mt-3 font-display text-3xl uppercase text-ink">Upload a release</h1>
         <p className="mt-2 text-sm font-medium text-ink-soft">
-          Singles, EPs, and albums all go through Pending Review before they reach the catalog.
+          Save as a draft to finish later, or submit straight for review.
         </p>
       </header>
 

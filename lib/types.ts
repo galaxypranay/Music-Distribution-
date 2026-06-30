@@ -12,6 +12,7 @@ export interface Artist {
 export type ReleaseType = 'Single' | 'EP' | 'Album'
 
 export type ReleaseStatus =
+  | 'Draft'
   | 'Pending Review'
   | 'Approved'
   | 'Sent to Platforms'

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
-import type { ReleaseType } from '@/lib/types'
+import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
+import type { ReleaseType, Track } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
 const VALID_RELEASE_TYPES: ReleaseType[] = ['Single', 'EP', 'Album']
+const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Rejected']
 
 interface IncomingTrack {
   song_title?: string
@@ -14,12 +16,14 @@ interface IncomingTrack {
   songwriter?: string | null
 }
 
-interface ResubmitBody {
+interface EditBody {
   artist_id?: string
   title?: string
   release_type?: string
   cover_art_url?: string | null
   release_date?: string | null
+  /** Optional explicit target status (only 'Draft' or 'Pending Review' are honored). */
+  status?: 'Draft' | 'Pending Review'
   tracks?: IncomingTrack[]
 }
 
@@ -29,7 +33,7 @@ export async function PATCH(
 ) {
   const { id } = await params
 
-  let body: ResubmitBody
+  let body: EditBody
   try {
     body = await request.json()
   } catch {
@@ -66,9 +70,10 @@ export async function PATCH(
   try {
     const supabase = getSupabaseAdminClient()
 
-    // Only the owning artist can resubmit, and only while it's Rejected —
-    // this isn't real auth, but it matches the rest of the app's model and
-    // stops an approved/live release from being silently rewritten.
+    // Only the owning artist can edit, and only while it's still Draft,
+    // Pending Review, or Rejected — this isn't real auth, but it matches
+    // the rest of the app's model and stops an approved/live release from
+    // being silently rewritten.
     const { data: existing, error: fetchError } = await supabase
       .from('releases')
       .select('id, artist_id, status')
@@ -83,12 +88,22 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     }
 
-    if (existing.status !== 'Rejected') {
+    if (!EDITABLE_STATUSES.includes(existing.status)) {
       return NextResponse.json(
-        { error: 'Only a rejected release can be resubmitted.' },
+        { error: 'Only a draft, pending, or rejected release can be edited.' },
         { status: 400 }
       )
     }
+
+    // Resulting status: an explicit target wins; otherwise a rejected
+    // release resubmits to Pending Review, and a draft/pending one keeps
+    // its current status (editing it doesn't change where it stands).
+    const nextStatus =
+      body.status === 'Draft' || body.status === 'Pending Review'
+        ? body.status
+        : existing.status === 'Rejected'
+          ? 'Pending Review'
+          : existing.status
 
     const { data: release, error: updateError } = await supabase
       .from('releases')
@@ -97,7 +112,7 @@ export async function PATCH(
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
-        status: 'Pending Review',
+        status: nextStatus,
         rejection_reason: null,
       })
       .eq('id', id)
@@ -109,7 +124,7 @@ export async function PATCH(
     }
 
     // Full replace of the track list: simplest correct way to handle
-    // additions, removals, and edits in one resubmission.
+    // additions, removals, and edits in one save.
     const { error: deleteTracksError } = await supabase
       .from('tracks')
       .delete()
@@ -139,6 +154,76 @@ export async function PATCH(
     }
 
     return NextResponse.json({ release: { ...release, tracks: insertedTracks } })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unexpected server error.'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const { searchParams } = new URL(request.url)
+  const artistId = searchParams.get('artist_id')
+
+  if (!artistId) {
+    return NextResponse.json({ error: 'artist_id query parameter is required.' }, { status: 400 })
+  }
+
+  try {
+    const supabase = getSupabaseAdminClient()
+
+    const { data: release, error: fetchError } = await supabase
+      .from('releases')
+      .select('*, tracks(*)')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !release) {
+      return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
+    }
+
+    if (release.artist_id !== artistId) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
+    }
+
+    // Artists can only remove their own work before it's been reviewed —
+    // anything already in the pipeline needs the admin's scheduled-deletion
+    // flow instead, which gives a grace period.
+    if (!['Draft', 'Pending Review'].includes(release.status)) {
+      return NextResponse.json(
+        { error: 'Only a draft or pending release can be deleted directly.' },
+        { status: 400 }
+      )
+    }
+
+    const { error: deleteError } = await supabase.from('releases').delete().eq('id', id)
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    }
+
+    const urlsToClean = [
+      release.cover_art_url,
+      ...((release.tracks ?? []) as Track[]).map((track) => track.audio_url),
+    ].filter((url): url is string => Boolean(url))
+
+    for (const url of urlsToClean) {
+      const parsed = parseStoragePathFromPublicUrl(url)
+      if (!parsed) continue
+
+      const { error: storageError } = await supabase.storage
+        .from(parsed.bucket)
+        .remove([parsed.path])
+
+      if (storageError) {
+        console.error('Storage cleanup failed for release', id, storageError.message)
+      }
+    }
+
+    return NextResponse.json({ release })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected server error.'
     return NextResponse.json({ error: message }, { status: 500 })

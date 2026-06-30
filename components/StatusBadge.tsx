@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import type { ReleaseStatus } from '@/lib/types'
 
 const FILL_STYLES: Record<ReleaseStatus, string> = {
+  Draft: 'bg-white text-ink-soft',
   'Pending Review': 'bg-canary text-ink',
   Approved: 'bg-cobalt text-white',
   'Sent to Platforms': 'bg-ink text-paper',
@@ -10,6 +11,7 @@ const FILL_STYLES: Record<ReleaseStatus, string> = {
 }
 
 const LABELS: Record<ReleaseStatus, string> = {
+  Draft: 'Draft',
   'Pending Review': 'Pending',
   Approved: 'Approved',
   'Sent to Platforms': 'Sent',

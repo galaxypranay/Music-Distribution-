@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('releases')
       .select('*, tracks(*)')
+      .neq('status', 'Draft')
       .order('created_at', { ascending: false })
 
     if (error) {

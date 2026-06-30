@@ -20,6 +20,7 @@ is for brand-new databases only):
    Track structure, EP/Album support).
 2. `supabase/migration-profile-uid-scheduled-delete.sql` — artist UID, social
    links, and the scheduled-deletion columns on releases.
+3. `supabase/migration-draft-status.sql` — allows 'Draft' as a release status.
 
 Each script is safe to run on a database with real data already in it.
 
@@ -74,12 +75,15 @@ Release (Single / EP / Album)
 ### Status lifecycle
 
 ```
-Pending Review → Approved → Sent to Platforms → Live
-       │
-       └──────────────────────────────────────────▶ Rejected → (resubmit) → Pending Review
+Draft → Pending Review → Approved → Sent to Platforms → Live
+                 │
+                 └────────────────────────────────────────▶ Rejected → (resubmit) → Pending Review
 ```
 
-- **Pending Review** — just submitted, awaiting your review.
+- **Draft** — saved but not submitted. Only the artist can see it; it never
+  reaches the admin panel. Can be edited, deleted outright, or duplicated.
+- **Pending Review** — submitted, awaiting your review. Can still be edited
+  or deleted outright by the artist (no admin action needed yet).
 - **Approved** — you've reviewed it and it's good to go out.
 - **Sent to Platforms** — you've handed the files off (e.g. to whoever
   manually uploads to Spotify/Apple Music/etc.).
@@ -90,6 +94,10 @@ Pending Review → Approved → Sent to Platforms → Live
   sees that reason on their Status page along with a **Resubmit** button,
   which reopens the same form (pre-filled) to fix and resend. Resubmitting
   resets status to Pending Review.
+
+Any release, regardless of status, can be **duplicated** into a fresh Draft —
+useful for reusing most of an EP's metadata for a new single, or recovering
+from a release you want to substantially redo.
 
 ### Deletion is scheduled, not instant
 
@@ -132,8 +140,13 @@ app/
     │   ├── route.ts                POST create artist
     │   └── [id]/route.ts           GET/PATCH own profile (name/photo/social links)
     ├── releases/
-    │   ├── route.ts                POST create release+tracks · GET own releases
-    │   └── [id]/route.ts           PATCH resubmit a rejected release (artist-owned)
+    │   ├── route.ts                POST create release+tracks (Draft or Pending Review)
+    │   │                              · GET own releases (also runs scheduled-deletion sweep)
+    │   └── [id]/
+    │       ├── route.ts                PATCH edit (Draft/Pending/Rejected only, artist-owned)
+    │       │                              · DELETE outright (Draft/Pending only, artist-owned)
+    │       ├── submit/route.ts         POST promote a Draft to Pending Review
+    │       └── duplicate/route.ts      POST copy a release (+ its files) into a new Draft
     ├── tickets/route.ts           POST create ticket
     └── admin/
         ├── auth/route.ts          POST verify passcode
@@ -181,7 +194,8 @@ lib/
 supabase/
 ├── schema.sql                                    Fresh-install schema (new projects only)
 ├── migration-ep-album.sql                        Upgrade: Release+Track structure
-└── migration-profile-uid-scheduled-delete.sql    Upgrade: UID, social links, scheduled delete
+├── migration-profile-uid-scheduled-delete.sql    Upgrade: UID, social links, scheduled delete
+└── migration-draft-status.sql                    Upgrade: allows Draft as a release status
 ```
 
 ## 4. Set up Supabase
@@ -246,6 +260,17 @@ Sidebar tabs: **Home** (welcome + quick stats), **Upload**, **Status**,
 timeline), plus **Royalties** and **Notifications** as disabled "Coming
 soon" entries (click shows a brief toast, doesn't navigate).
 
+**Upload** can save as a **Draft** (visible only to the artist — admins never
+see drafts) or submit straight to Pending Review. From **Status**, every
+release gets contextual actions based on its state:
+- **Draft / Pending Review** — Edit (full form, including swapping audio
+  files) or Delete outright, no admin involvement needed.
+- **Rejected** — Resubmit (same as Edit, but resets status to Pending Review)
+  alongside the rejection reason the admin left.
+- **Any status** — Duplicate, which copies the release (and makes
+  independent copies of its cover art + audio files in Storage, so deleting
+  the original later doesn't break the copy) into a fresh Draft.
+
 Clicking the profile photo/name in the top bar opens the **Profile panel**:
 your UID (with a copy button), name, photo, "member since" date, social
 links (Instagram/YouTube/Spotify), an edit mode for all of the above, and
@@ -253,6 +278,9 @@ Sign out.
 
 ## Admin panel features
 
+- **Drafts are invisible to admins** — `GET /api/admin/releases` explicitly
+  excludes them. A release only enters the admin's world once the artist
+  submits it (Pending Review or later).
 - **Click an artist card** to open a panel scoped to just that artist —
   their releases and support tickets, all in one place. Each artist's card
   shows their **UID**, and the search box matches on UID as well as name.

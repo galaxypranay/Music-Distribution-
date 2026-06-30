@@ -51,7 +51,7 @@ create table if not exists public.releases (
   release_date           date,
   status                 text not null default 'Pending Review'
                            check (status in (
-                             'Pending Review', 'Approved', 'Sent to Platforms', 'Live', 'Rejected'
+                             'Draft', 'Pending Review', 'Approved', 'Sent to Platforms', 'Live', 'Rejected'
                            )),
   rejection_reason       text,
   spotify_url            text,
