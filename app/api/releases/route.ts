@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { processScheduledDeletions } from '@/lib/process-scheduled-deletions'
+import { logActivity } from '@/lib/log-activity'
 import type { ReleaseType } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -109,6 +110,13 @@ export async function POST(request: Request) {
       await supabase.from('releases').delete().eq('id', release.id)
       return NextResponse.json({ error: tracksError.message }, { status: 500 })
     }
+
+    await logActivity(supabase, {
+      artistId: artist_id,
+      artistName: artist_name,
+      action: release.status === 'Draft' ? 'release_submitted' : 'release_submitted',
+      detail: `${release.title} (${release.release_type}) — ${release.status}`,
+    })
 
     return NextResponse.json(
       { release: { ...release, tracks: insertedTracks } },

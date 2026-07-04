@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthorized } from '@/lib/admin-auth'
+import { logActivity } from '@/lib/log-activity'
 import type { TicketStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,13 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await logActivity(supabase, {
+      artistId: data.artist_id,
+      artistName: data.artist_name,
+      action: body.status === 'Closed' ? 'ticket_resolved' : 'ticket_reopened',
+      detail: data.subject,
+    })
 
     return NextResponse.json({ ticket: data })
   } catch (err) {

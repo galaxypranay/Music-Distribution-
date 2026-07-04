@@ -1,14 +1,21 @@
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Music2, Plus, Trash2, UploadCloud } from 'lucide-react'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { getFileExtension, slugify } from '@/lib/utils'
-import type { ReleaseType, ReleaseWithTracks } from '@/lib/types'
+import type { AppSettings, ReleaseType, ReleaseWithTracks } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Field'
+
+const DEFAULT_SETTINGS: AppSettings = {
+  maintenance_mode: false,
+  max_upload_mb: 50,
+  allowed_image_formats: ['jpg', 'jpeg', 'png', 'webp'],
+  allowed_audio_formats: ['mp3', 'wav', 'flac', 'aac', 'ogg'],
+}
 
 const GENRES = [
   'Afrobeats',
@@ -92,6 +99,25 @@ export default function ReleaseForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploadSettings, setUploadSettings] = useState<Pick<
+    AppSettings,
+    'max_upload_mb' | 'allowed_image_formats' | 'allowed_audio_formats'
+  >>(DEFAULT_SETTINGS)
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.max_upload_mb) {
+          setUploadSettings({
+            max_upload_mb: data.max_upload_mb,
+            allowed_image_formats: data.allowed_image_formats ?? DEFAULT_SETTINGS.allowed_image_formats,
+            allowed_audio_formats: data.allowed_audio_formats ?? DEFAULT_SETTINGS.allowed_audio_formats,
+          })
+        }
+      })
+      .catch(() => {/* use defaults on failure */})
+  }, [])
 
   const isSingle = releaseType === 'Single'
   const initialStatus = initialRelease?.status
@@ -129,6 +155,25 @@ export default function ReleaseForm({
       return
     }
 
+    const maxBytes = uploadSettings.max_upload_mb * 1024 * 1024
+
+    // Validate cover art
+    if (coverFile) {
+      const ext = getFileExtension(coverFile.name)
+      if (!uploadSettings.allowed_image_formats.includes(ext)) {
+        setError(
+          `Cover art must be one of: ${uploadSettings.allowed_image_formats.join(', ')}. Got: .${ext}`
+        )
+        return
+      }
+      if (coverFile.size > maxBytes) {
+        setError(
+          `Cover art is too large (${(coverFile.size / 1024 / 1024).toFixed(1)} MB). Max allowed: ${uploadSettings.max_upload_mb} MB.`
+        )
+        return
+      }
+    }
+
     for (const track of tracks) {
       if (!track.songTitle.trim()) {
         setError('Every track needs a song title.')
@@ -137,6 +182,21 @@ export default function ReleaseForm({
       if (!track.audioFile && !track.existingAudioUrl) {
         setError('Every track needs an audio file.')
         return
+      }
+      if (track.audioFile) {
+        const ext = getFileExtension(track.audioFile.name)
+        if (!uploadSettings.allowed_audio_formats.includes(ext)) {
+          setError(
+            `"${track.songTitle}" — audio must be one of: ${uploadSettings.allowed_audio_formats.join(', ')}. Got: .${ext}`
+          )
+          return
+        }
+        if (track.audioFile.size > maxBytes) {
+          setError(
+            `"${track.songTitle}" — audio is too large (${(track.audioFile.size / 1024 / 1024).toFixed(1)} MB). Max allowed: ${uploadSettings.max_upload_mb} MB.`
+          )
+          return
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
+import { logActivity } from '@/lib/log-activity'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,13 @@ export async function POST(
       await supabase.from('releases').delete().eq('id', copy.id)
       return NextResponse.json({ error: tracksError.message }, { status: 500 })
     }
+
+    await logActivity(supabase, {
+      artistId: body.artist_id,
+      artistName: original.artist_name,
+      action: 'release_duplicated',
+      detail: `"${original.title}" → "${copy.title}" (${copy.release_type})`,
+    })
 
     return NextResponse.json(
       { release: { ...copy, tracks: copiedTracks } },

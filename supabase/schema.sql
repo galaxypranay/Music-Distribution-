@@ -108,6 +108,37 @@ create table if not exists public.tickets (
 create index if not exists tickets_artist_id_idx on public.tickets (artist_id);
 
 -- ----------------------------------------------------------------------------
+-- activity_logs
+-- ----------------------------------------------------------------------------
+create table if not exists public.activity_logs (
+  id           uuid primary key default gen_random_uuid(),
+  artist_id    uuid references public.artists (id) on delete set null,
+  artist_name  text,
+  action       text not null,
+  detail       text,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists activity_logs_artist_id_idx on public.activity_logs (artist_id);
+create index if not exists activity_logs_created_at_idx on public.activity_logs (created_at desc);
+
+-- ----------------------------------------------------------------------------
+-- app_settings (single-row config)
+-- ----------------------------------------------------------------------------
+create table if not exists public.app_settings (
+  id                     text primary key default 'global',
+  maintenance_mode       boolean not null default false,
+  max_upload_mb          integer not null default 50,
+  allowed_image_formats  text[] not null default array['jpg','jpeg','png','webp'],
+  allowed_audio_formats  text[] not null default array['mp3','wav','flac','aac','ogg'],
+  updated_at             timestamptz not null default now()
+);
+
+insert into public.app_settings (id)
+values ('global')
+on conflict (id) do nothing;
+
+-- ----------------------------------------------------------------------------
 -- Row Level Security
 --
 -- The Next.js app never talks to these tables with the anon key — every read
@@ -116,10 +147,12 @@ create index if not exists tickets_artist_id_idx on public.tickets (artist_id);
 -- The service role bypasses RLS entirely, so the correct policy for the anon
 -- and authenticated roles here is simply: no access at all.
 -- ----------------------------------------------------------------------------
-alter table public.artists  enable row level security;
-alter table public.releases enable row level security;
-alter table public.tracks   enable row level security;
-alter table public.tickets  enable row level security;
+alter table public.artists       enable row level security;
+alter table public.releases      enable row level security;
+alter table public.tracks        enable row level security;
+alter table public.tickets       enable row level security;
+alter table public.activity_logs enable row level security;
+alter table public.app_settings  enable row level security;
 
 -- (No policies are created for anon/authenticated — RLS with zero policies
 -- means every request from those roles is denied by default. Only the

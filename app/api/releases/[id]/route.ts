@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
+import { logActivity } from '@/lib/log-activity'
 import type { ReleaseType, Track } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -153,6 +154,13 @@ export async function PATCH(
       return NextResponse.json({ error: tracksError.message }, { status: 500 })
     }
 
+    await logActivity(supabase, {
+      artistId: artist_id,
+      artistName: release.artist_name,
+      action: 'release_edited',
+      detail: `${release.title} (${release.release_type}) — now ${release.status}`,
+    })
+
     return NextResponse.json({ release: { ...release, tracks: insertedTracks } })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected server error.'
@@ -222,6 +230,13 @@ export async function DELETE(
         console.error('Storage cleanup failed for release', id, storageError.message)
       }
     }
+
+    await logActivity(supabase, {
+      artistId: artistId,
+      artistName: release.artist_name,
+      action: 'release_deleted',
+      detail: `${release.title} (${release.release_type})`,
+    })
 
     return NextResponse.json({ release })
   } catch (err) {

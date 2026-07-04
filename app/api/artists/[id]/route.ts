@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/log-activity'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await logActivity(supabase, {
+      artistId: id,
+      artistName: data.name,
+      action: 'profile_updated',
+    })
 
     return NextResponse.json({ artist: data })
   } catch (err) {

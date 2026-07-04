@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/log-activity'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,13 @@ export async function POST(
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
+
+    await logActivity(supabase, {
+      artistId: body.artist_id,
+      artistName: release.artist_name,
+      action: 'release_submitted',
+      detail: `${release.title} (${release.release_type})`,
+    })
 
     return NextResponse.json({
       release: {

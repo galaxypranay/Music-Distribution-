@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthorized } from '@/lib/admin-auth'
-import type { ReleaseStatus } from '@/lib/types'
+import { logActivity } from '@/lib/log-activity'
+import type { ReleaseStatus, ActivityAction } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,13 @@ const VALID_STATUSES: ReleaseStatus[] = [
   'Live',
   'Rejected',
 ]
+
+const STATUS_ACTION_MAP: Record<string, ActivityAction> = {
+  Approved: 'release_approved',
+  Rejected: 'release_rejected',
+  'Sent to Platforms': 'release_sent',
+  Live: 'release_live',
+}
 
 interface PatchBody {
   status?: string
@@ -46,9 +54,6 @@ export async function PATCH(
   }
 
   const update: Record<string, unknown> = { status: body.status }
-
-  // A stale rejection reason from a previous cycle shouldn't linger once
-  // the release moves on to something other than Rejected.
   update.rejection_reason = body.status === 'Rejected' ? body.rejection_reason ?? null : null
 
   if (body.status === 'Live') {
@@ -69,6 +74,18 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    const action = STATUS_ACTION_MAP[body.status]
+    if (action) {
+      await logActivity(supabase, {
+        artistId: data.artist_id,
+        artistName: data.artist_name,
+        action,
+        detail: body.status === 'Rejected' && body.rejection_reason
+          ? `${data.title} — Reason: ${body.rejection_reason}`
+          : data.title,
+      })
     }
 
     return NextResponse.json({

@@ -74,3 +74,36 @@ export interface StorageUsage {
   fileCount: number
   byBucket: Array<{ bucketId: string; totalBytes: number; fileCount: number }>
 }
+
+export type ActivityAction =
+  | 'artist_registered'
+  | 'release_submitted'
+  | 'release_edited'
+  | 'release_duplicated'
+  | 'release_deleted'
+  | 'release_approved'
+  | 'release_rejected'
+  | 'release_sent'
+  | 'release_live'
+  | 'release_deletion_scheduled'
+  | 'release_deletion_cancelled'
+  | 'ticket_opened'
+  | 'ticket_resolved'
+  | 'ticket_reopened'
+  | 'profile_updated'
+
+export interface ActivityLog {
+  id: string
+  artist_id: string | null
+  artist_name: string | null
+  action: ActivityAction
+  detail: string | null
+  created_at: string
+}
+
+export interface AppSettings {
+  maintenance_mode: boolean
+  max_upload_mb: number
+  allowed_image_formats: string[]
+  allowed_audio_formats: string[]
+}
