@@ -14,6 +14,7 @@ export type ReleaseType = 'Single' | 'EP' | 'Album'
 export type ReleaseStatus =
   | 'Draft'
   | 'Pending Review'
+  | 'Needs Changes'
   | 'Approved'
   | 'Sent to Platforms'
   | 'Live'
@@ -28,8 +29,12 @@ export interface Release {
   release_type: ReleaseType
   cover_art_url: string | null
   release_date: string | null
+  language: string | null
+  copyright: string | null
   status: ReleaseStatus
   rejection_reason: string | null
+  /** Set when the admin sends the release back with "Needs Changes". */
+  admin_note: string | null
   spotify_url: string | null
   apple_music_url: string | null
   youtube_url: string | null
@@ -48,6 +53,7 @@ export interface Track {
   audio_url: string
   explicit: boolean
   songwriter: string | null
+  lyrics: string | null
   created_at: string
 }
 
@@ -98,6 +104,7 @@ export type ActivityAction =
   | 'release_deleted'
   | 'release_approved'
   | 'release_rejected'
+  | 'release_needs_changes'
   | 'release_sent'
   | 'release_live'
   | 'release_deletion_scheduled'
