@@ -1,6 +1,9 @@
 export interface Artist {
   id: string
   display_id: number
+  /** Supabase Auth user id. Null only for legacy pre-auth rows. */
+  user_id: string | null
+  email: string | null
   name: string
   photo_url: string | null
   instagram_url: string | null
