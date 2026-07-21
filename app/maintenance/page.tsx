@@ -1,6 +1,40 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
 
 export default function MaintenancePage() {
+  const router = useRouter()
+
+  // The proxy/middleware only guards '/' and '/dashboard/*', not '/maintenance'
+  // itself — so once an artist lands here, nothing re-checks the setting. Poll
+  // /api/settings and bounce back to the site the moment maintenance is off, so
+  // a refresh (or just waiting) actually clears the page.
+  useEffect(() => {
+    let active = true
+
+    async function check() {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' })
+        if (!res.ok) return
+        const settings = await res.json()
+        if (active && !settings.maintenance_mode) {
+          router.replace('/')
+        }
+      } catch {
+        // Can't reach settings — stay on the maintenance page.
+      }
+    }
+
+    check()
+    const interval = setInterval(check, 10000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [router])
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-canary px-6">
       <div className="animate-fade-up w-full max-w-md text-center">
