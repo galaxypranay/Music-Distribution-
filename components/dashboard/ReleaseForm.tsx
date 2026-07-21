@@ -30,7 +30,31 @@ const GENRES = [
   'Other',
 ]
 
+const LANGUAGES = [
+  'English',
+  'Hindi',
+  'Punjabi',
+  'Bhojpuri',
+  'Tamil',
+  'Telugu',
+  'Marathi',
+  'Bengali',
+  'Haryanvi',
+  'Rajasthani',
+  'Gujarati',
+  'Kannada',
+  'Malayalam',
+  'Urdu',
+  'Spanish',
+  'French',
+  'Instrumental (no language)',
+  'Other',
+]
+
 const RELEASE_TYPES: ReleaseType[] = ['Single', 'EP', 'Album']
+
+// Light industry-style rules so an "EP" with one song can't be submitted.
+const MIN_TRACKS: Record<ReleaseType, number> = { Single: 1, EP: 2, Album: 5 }
 
 interface TrackFormState {
   key: string
@@ -38,6 +62,7 @@ interface TrackFormState {
   genre: string
   explicit: boolean
   songwriter: string
+  lyrics: string
   audioFile: File | null
   existingAudioUrl: string | null
 }
@@ -53,6 +78,7 @@ function emptyTrack(): TrackFormState {
     genre: GENRES[0],
     explicit: false,
     songwriter: '',
+    lyrics: '',
     audioFile: null,
     existingAudioUrl: null,
   }
@@ -79,6 +105,8 @@ export default function ReleaseForm({
   )
   const [title, setTitle] = useState(initialRelease?.title ?? '')
   const [releaseDate, setReleaseDate] = useState(initialRelease?.release_date ?? '')
+  const [language, setLanguage] = useState(initialRelease?.language ?? LANGUAGES[0])
+  const [copyrightLine, setCopyrightLine] = useState(initialRelease?.copyright ?? '')
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(
     initialRelease?.cover_art_url ?? null
@@ -91,6 +119,7 @@ export default function ReleaseForm({
           genre: track.genre ?? GENRES[0],
           explicit: track.explicit,
           songwriter: track.songwriter ?? '',
+          lyrics: track.lyrics ?? '',
           audioFile: null,
           existingAudioUrl: track.audio_url,
         }))
@@ -98,6 +127,7 @@ export default function ReleaseForm({
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploadSettings, setUploadSettings] = useState<Pick<
     AppSettings,
@@ -155,6 +185,15 @@ export default function ReleaseForm({
       return
     }
 
+    // Only enforce the track-count minimum on real submissions — drafts can
+    // be saved half-finished.
+    if (targetStatus !== 'Draft' && tracks.length < MIN_TRACKS[releaseType]) {
+      setError(
+        `A${releaseType === 'EP' ? 'n' : ''} ${releaseType} needs at least ${MIN_TRACKS[releaseType]} tracks.`
+      )
+      return
+    }
+
     const maxBytes = uploadSettings.max_upload_mb * 1024 * 1024
 
     // Validate cover art
@@ -207,6 +246,7 @@ export default function ReleaseForm({
 
       let coverArtUrl = initialRelease?.cover_art_url ?? null
       if (coverFile) {
+        setUploadProgress('Uploading cover art…')
         const extension = getFileExtension(coverFile.name) || 'jpg'
         const path = `${artist.id}/${Date.now()}-${slugify(trimmedTitle)}-cover.${extension}`
         const { error: uploadError } = await supabase.storage
@@ -214,6 +254,12 @@ export default function ReleaseForm({
           .upload(path, coverFile, { cacheControl: '3600', upsert: false })
         if (uploadError) throw new Error(uploadError.message)
         coverArtUrl = supabase.storage.from('covers').getPublicUrl(path).data.publicUrl
+      }
+
+      const totalUploads = tracks.filter((t) => t.audioFile).length
+      let uploadsDone = 0
+      if (totalUploads > 0) {
+        setUploadProgress(`Uploading tracks… 0/${totalUploads}`)
       }
 
       const trackPayloads = await Promise.all(
@@ -228,6 +274,8 @@ export default function ReleaseForm({
               .upload(path, track.audioFile, { cacheControl: '3600', upsert: false })
             if (uploadError) throw new Error(uploadError.message)
             audioUrl = supabase.storage.from('songs').getPublicUrl(path).data.publicUrl
+            uploadsDone += 1
+            setUploadProgress(`Uploading tracks… ${uploadsDone}/${totalUploads}`)
           }
 
           return {
@@ -236,9 +284,12 @@ export default function ReleaseForm({
             audio_url: audioUrl,
             explicit: track.explicit,
             songwriter: track.songwriter.trim() || null,
+            lyrics: track.lyrics.trim() || null,
           }
         })
       )
+
+      setUploadProgress('Saving release…')
 
       const payload = {
         artist_id: artist.id,
@@ -247,6 +298,8 @@ export default function ReleaseForm({
         release_type: releaseType,
         cover_art_url: coverArtUrl,
         release_date: releaseDate || null,
+        language: language || null,
+        copyright: copyrightLine.trim() || null,
         tracks: trackPayloads,
         ...(targetStatus ? { status: targetStatus } : {}),
       }
@@ -271,6 +324,7 @@ export default function ReleaseForm({
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
     } finally {
       setIsSubmitting(false)
+      setUploadProgress(null)
     }
   }
 
@@ -287,7 +341,7 @@ export default function ReleaseForm({
       ? 'Submit for review'
       : initialStatus === 'Draft'
         ? 'Save & submit'
-        : initialStatus === 'Rejected'
+        : initialStatus === 'Rejected' || initialStatus === 'Needs Changes'
           ? 'Resubmit for review'
           : 'Save changes'
 
@@ -301,6 +355,12 @@ export default function ReleaseForm({
             </p>
             <label
               htmlFor="cover-art"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const file = e.dataTransfer.files?.[0]
+                if (file) handleCoverChange(file)
+              }}
               className="flex h-28 w-28 cursor-pointer items-center justify-center overflow-hidden rounded-lg border-[3px] border-dashed border-ink bg-paper transition-colors hover:bg-canary/20"
             >
               {coverPreview ? (
@@ -349,6 +409,27 @@ export default function ReleaseForm({
               onChange={(e) => setTitle(e.target.value)}
               placeholder={releaseType === 'Single' ? 'e.g. Midnight in Lagos' : 'e.g. Late Nights EP'}
             />
+            <div className="grid gap-6 sm:grid-cols-2">
+              <Select
+                label="Language"
+                required
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {LANGUAGES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                label="Copyright"
+                hint="optional"
+                value={copyrightLine}
+                onChange={(e) => setCopyrightLine(e.target.value)}
+                placeholder={`e.g. © ${new Date().getFullYear()} ${artist.name}`}
+              />
+            </div>
           </div>
         </div>
 
@@ -428,8 +509,27 @@ export default function ReleaseForm({
               </div>
 
               <div className="mt-4">
+                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+                  Lyrics <span className="normal-case">(optional)</span>
+                </label>
+                <textarea
+                  value={track.lyrics}
+                  onChange={(e) => updateTrack(track.key, { lyrics: e.target.value })}
+                  placeholder="Paste the lyrics here…"
+                  rows={3}
+                  className="w-full rounded-lg border-[2.5px] border-ink bg-white px-3.5 py-2.5 text-sm font-medium text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+                />
+              </div>
+
+              <div className="mt-4">
                 <label
                   htmlFor={`audio-${track.key}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const file = e.dataTransfer.files?.[0]
+                    if (file) updateTrack(track.key, { audioFile: file })
+                  }}
                   className="flex cursor-pointer items-center gap-3 rounded-lg border-[2.5px] border-dashed border-ink bg-white px-4 py-3 transition-colors hover:bg-canary/20"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border-2 border-ink bg-paper">
@@ -444,9 +544,17 @@ export default function ReleaseForm({
                       ? track.audioFile.name
                       : track.existingAudioUrl
                         ? 'Replace audio file (optional)'
-                        : 'Choose an audio file'}
+                        : 'Drag & drop or choose an audio file'}
                   </span>
                 </label>
+                {track.audioFile ? (
+                  <audio
+                    controls
+                    preload="metadata"
+                    src={URL.createObjectURL(track.audioFile)}
+                    className="mt-2 h-8 w-full max-w-md"
+                  />
+                ) : null}
                 <input
                   id={`audio-${track.key}`}
                   type="file"
@@ -464,6 +572,13 @@ export default function ReleaseForm({
         {error ? (
           <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
             {error}
+          </p>
+        ) : null}
+
+        {uploadProgress ? (
+          <p className="flex items-center gap-2 rounded-lg border-[2.5px] border-ink bg-canary px-4 py-3 text-sm font-bold text-ink shadow-[3px_3px_0_0_var(--color-ink)]">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-[2.5px] border-current border-t-transparent" />
+            {uploadProgress}
           </p>
         ) : null}
 

@@ -40,6 +40,46 @@ export default function StorageUsageMeter({ usage }: { usage: StorageUsage }) {
           Almost full — consider upgrading your Supabase plan or clearing unused files.
         </p>
       ) : null}
+
+      {usage.byBucket.length > 0 ? (
+        <div className="mt-4 border-t-2 border-dashed border-ink/30 pt-3">
+          <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+            By bucket
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {usage.byBucket.map((bucket) => {
+              const share =
+                usage.usedBytes > 0 ? (bucket.totalBytes / usage.usedBytes) * 100 : 0
+
+              return (
+                <li key={bucket.bucketId} className="flex items-center gap-2">
+                  <span
+                    className={`h-2.5 w-2.5 shrink-0 rounded-sm border-2 border-ink ${
+                      BUCKET_COLORS[bucket.bucketId] ?? 'bg-surface-raised'
+                    }`}
+                  />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-soft">
+                    {bucket.bucketId}
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] font-bold text-ink">
+                    {formatBytes(bucket.totalBytes)}
+                  </span>
+                  <span className="w-14 text-right font-mono text-[10px] text-ink-faint">
+                    {bucket.fileCount} files · {Math.round(share)}%
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ) : null}
     </Card>
   )
+}
+
+const BUCKET_COLORS: Record<string, string> = {
+  covers: 'bg-canary',
+  songs: 'bg-cobalt',
+  profiles: 'bg-lime',
+  attachments: 'bg-punch',
 }

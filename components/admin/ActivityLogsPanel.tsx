@@ -10,6 +10,7 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   release_deleted:            { label: 'Deleted',              color: 'bg-punch text-white' },
   release_approved:           { label: 'Approved',             color: 'bg-lime text-ink' },
   release_rejected:           { label: 'Rejected',             color: 'bg-punch text-white' },
+  release_needs_changes:      { label: 'Needs changes',        color: 'bg-canary text-ink' },
   release_sent:               { label: 'Sent',                 color: 'bg-ink text-paper' },
   release_live:               { label: 'Live',                 color: 'bg-lime text-ink' },
   release_deletion_scheduled: { label: 'Deletion scheduled',   color: 'bg-punch text-white' },

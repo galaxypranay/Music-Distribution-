@@ -6,6 +6,7 @@ import {
   Download,
   Hourglass,
   Music2,
+  Pencil,
   Radio,
   RotateCcw,
   Send,
@@ -33,7 +34,9 @@ interface ReleaseManagerProps {
   emptyMessage?: string
 }
 
-type ActionMode = { releaseId: string; type: 'reject' | 'live' | 'delete' } | null
+type ActionMode =
+  | { releaseId: string; type: 'reject' | 'changes' | 'live' | 'delete' }
+  | null
 
 const DELETION_WINDOWS = [24, 48] as const
 
@@ -83,6 +86,11 @@ export default function ReleaseManager({
   function startReject(release: ReleaseWithTracks) {
     setReasonDraft(release.rejection_reason ?? '')
     setActionMode({ releaseId: release.id, type: 'reject' })
+  }
+
+  function startChanges(release: ReleaseWithTracks) {
+    setReasonDraft(release.admin_note ?? '')
+    setActionMode({ releaseId: release.id, type: 'changes' })
   }
 
   function startLive(release: ReleaseWithTracks) {
@@ -209,6 +217,7 @@ export default function ReleaseManager({
           days !== null && days <= 3 && !['Live', 'Sent to Platforms'].includes(release.status)
         const isOverdue = days !== null && days < 0 && release.status !== 'Live'
         const inReject = actionMode?.releaseId === release.id && actionMode.type === 'reject'
+        const inChanges = actionMode?.releaseId === release.id && actionMode.type === 'changes'
         const inLive = actionMode?.releaseId === release.id && actionMode.type === 'live'
         const inDelete = actionMode?.releaseId === release.id && actionMode.type === 'delete'
         const hasScheduledDeletion = Boolean(release.scheduled_deletion_at)
@@ -253,24 +262,49 @@ export default function ReleaseManager({
                 </div>
                 <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
                   {release.artist_name} · Release date: {formatDate(release.release_date)}
+                  {release.language ? <> · {release.language}</> : null}
                 </p>
+                {release.copyright ? (
+                  <p className="mt-0.5 font-mono text-[10px] font-medium text-ink-faint">
+                    {release.copyright}
+                  </p>
+                ) : null}
 
                 <ul className="mt-3 flex flex-col gap-2">
                   {release.tracks.map((track) => (
-                    <li key={track.id} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="font-bold text-ink">
-                        {track.track_number}. {track.song_title}
-                      </span>
-                      {track.genre ? <span className="text-ink-faint">{track.genre}</span> : null}
-                      {track.explicit ? (
-                        <span className="rounded border-2 border-ink bg-punch px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase text-white">
-                          E
+                    <li key={track.id} className="text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-ink">
+                          {track.track_number}. {track.song_title}
                         </span>
+                        {track.genre ? <span className="text-ink-faint">{track.genre}</span> : null}
+                        {track.explicit ? (
+                          <span className="rounded border-2 border-ink bg-punch px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase text-white">
+                            E
+                          </span>
+                        ) : null}
+                        <audio controls src={track.audio_url} className="h-8 w-44" />
+                      </div>
+                      {track.lyrics ? (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint">
+                            Lyrics
+                          </summary>
+                          <p className="mt-1 whitespace-pre-wrap rounded-md border-2 border-ink/20 bg-paper px-3 py-2 text-sm font-medium text-ink-soft">
+                            {track.lyrics}
+                          </p>
+                        </details>
                       ) : null}
-                      <audio controls src={track.audio_url} className="h-8 w-44" />
                     </li>
                   ))}
                 </ul>
+
+                {release.status === 'Needs Changes' && release.admin_note ? (
+                  <p className="mt-3 rounded-md border-2 border-ink bg-canary/20 px-3 py-2 text-sm font-medium text-ink">
+                    <span className="font-bold">Changes requested: </span>
+                    {release.admin_note}
+                  </p>
+                ) : null}
 
                 {release.status === 'Rejected' && release.rejection_reason ? (
                   <p className="mt-3 rounded-md border-2 border-ink bg-punch/10 px-3 py-2 text-sm font-medium text-ink">
@@ -327,6 +361,38 @@ export default function ReleaseManager({
                         }
                       >
                         Confirm reject
+                      </Button>
+                      <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {inChanges ? (
+                  <div className="mt-3 rounded-md border-2 border-ink bg-paper p-3">
+                    <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+                      What should the artist change?
+                    </label>
+                    <textarea
+                      value={reasonDraft}
+                      onChange={(e) => setReasonDraft(e.target.value)}
+                      placeholder="e.g. Cover art has a typo — fix and resubmit."
+                      className="min-h-20 w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
+                    />
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        type="button"
+                        isLoading={isPending}
+                        disabled={isPending || !reasonDraft.trim()}
+                        onClick={() =>
+                          patchRelease(release, {
+                            status: 'Needs Changes',
+                            admin_note: reasonDraft,
+                          })
+                        }
+                      >
+                        Request changes
                       </Button>
                       <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
                         Cancel
@@ -433,7 +499,7 @@ export default function ReleaseManager({
                   </div>
                 ) : null}
 
-                {!inReject && !inLive && !inDelete ? (
+                {!inReject && !inChanges && !inLive && !inDelete ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <ActionPill
                       icon={Check}
@@ -448,6 +514,13 @@ export default function ReleaseManager({
                       fill="bg-punch text-white"
                       disabled={isPending}
                       onClick={() => startReject(release)}
+                    />
+                    <ActionPill
+                      icon={Pencil}
+                      label="Needs changes"
+                      fill="bg-canary text-ink"
+                      disabled={isPending || release.status === 'Needs Changes'}
+                      onClick={() => startChanges(release)}
                     />
                     <ActionPill
                       icon={Send}

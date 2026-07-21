@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Home, LifeBuoy, TrendingUp, UploadCloud } from 'lucide-react'
+import { BarChart3, Home, LifeBuoy, Settings, TrendingUp, UploadCloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const TABS = [
@@ -11,6 +11,7 @@ const TABS = [
   { href: '/dashboard/status', label: 'Status', icon: BarChart3 },
   { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
   { href: '/dashboard/analytics', label: 'Stats', icon: TrendingUp },
+  { href: '/dashboard/settings', label: 'More', icon: Settings },
 ]
 
 export default function MobileTabs() {
