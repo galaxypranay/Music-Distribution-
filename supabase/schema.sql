@@ -49,11 +49,16 @@ create table if not exists public.releases (
                            check (release_type in ('Single', 'EP', 'Album')),
   cover_art_url          text,
   release_date           date,
+  language               text,
+  copyright              text,
   status                 text not null default 'Pending Review'
                            check (status in (
-                             'Draft', 'Pending Review', 'Approved', 'Sent to Platforms', 'Live', 'Rejected'
+                             'Draft', 'Pending Review', 'Needs Changes', 'Approved',
+                             'Sent to Platforms', 'Live', 'Rejected'
                            )),
   rejection_reason       text,
+  -- Set when the admin sends the release back with "Needs Changes".
+  admin_note             text,
   spotify_url            text,
   apple_music_url        text,
   youtube_url            text,
@@ -86,6 +91,7 @@ create table if not exists public.tracks (
   audio_url     text not null,
   explicit      boolean not null default false,
   songwriter    text,
+  lyrics        text,
   created_at    timestamptz not null default now()
 );
 
