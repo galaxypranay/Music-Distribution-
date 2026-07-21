@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 
 const VALID_STATUSES: ReleaseStatus[] = [
   'Pending Review',
+  'Needs Changes',
   'Approved',
   'Sent to Platforms',
   'Live',
@@ -17,6 +18,7 @@ const VALID_STATUSES: ReleaseStatus[] = [
 const STATUS_ACTION_MAP: Record<string, ActivityAction> = {
   Approved: 'release_approved',
   Rejected: 'release_rejected',
+  'Needs Changes': 'release_needs_changes',
   'Sent to Platforms': 'release_sent',
   Live: 'release_live',
 }
@@ -24,6 +26,7 @@ const STATUS_ACTION_MAP: Record<string, ActivityAction> = {
 interface PatchBody {
   status?: string
   rejection_reason?: string | null
+  admin_note?: string | null
   spotify_url?: string | null
   apple_music_url?: string | null
   youtube_url?: string | null
@@ -53,8 +56,17 @@ export async function PATCH(
     )
   }
 
+  if (body.status === 'Needs Changes' && !body.admin_note?.trim()) {
+    return NextResponse.json(
+      { error: 'A note for the artist is required when requesting changes.' },
+      { status: 400 }
+    )
+  }
+
   const update: Record<string, unknown> = { status: body.status }
   update.rejection_reason = body.status === 'Rejected' ? body.rejection_reason ?? null : null
+  update.admin_note =
+    body.status === 'Needs Changes' ? body.admin_note?.trim() ?? null : null
 
   if (body.status === 'Live') {
     update.spotify_url = body.spotify_url ?? null
@@ -82,9 +94,12 @@ export async function PATCH(
         artistId: data.artist_id,
         artistName: data.artist_name,
         action,
-        detail: body.status === 'Rejected' && body.rejection_reason
-          ? `${data.title} — Reason: ${body.rejection_reason}`
-          : data.title,
+        detail:
+          body.status === 'Rejected' && body.rejection_reason
+            ? `${data.title} — Reason: ${body.rejection_reason}`
+            : body.status === 'Needs Changes' && body.admin_note
+              ? `${data.title} — Note: ${body.admin_note}`
+              : data.title,
       })
     }
 

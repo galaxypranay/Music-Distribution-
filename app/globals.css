@@ -27,6 +27,46 @@
   --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
 }
 
+/*
+  Dark mode — Tailwind v4 utilities resolve colors through CSS variables,
+  so re-scoping the tokens under `.dark` re-skins every component without
+  touching them. `--color-white` is remapped too: it's used as the card
+  surface color throughout, so in dark mode "white" cards become charcoal.
+*/
+.dark {
+  color-scheme: dark;
+
+  --color-paper: #171512;
+  --color-surface: #211f1b;
+  --color-surface-raised: #2a2620;
+
+  --color-ink: #f2eee3;
+  --color-ink-soft: #c6c1b4;
+  --color-ink-faint: #8d8a80;
+
+  --color-white: #211f1b;
+
+  --color-canary-deep: #ffd23f;
+}
+
+/*
+  Bright accent surfaces (canary/lime chips, badges) keep their light-mode
+  colors in dark mode — so any `text-ink` INSIDE them must stay dark, not
+  flip to the light dark-mode ink. Custom properties scope per-element, so
+  re-declaring the ink tokens on the accent element handles all children.
+*/
+.dark :is(.bg-canary, .bg-lime, .bg-canary-deep, .bg-lime-deep) {
+  --color-ink: #141414;
+  --color-ink-soft: #4a4a46;
+  --color-ink-faint: #6a6960;
+}
+
+/* Buttons/badges that pair a punch/cobalt background with `text-white`
+   must keep genuinely white text (the token is remapped to charcoal). */
+.dark :is(.bg-punch, .bg-punch-deep, .bg-cobalt, .bg-cobalt-deep, .bg-ink) {
+  --color-white: #ffffff;
+}
+
 @layer base {
   html {
     color-scheme: light;

@@ -13,13 +13,14 @@ import {
 } from 'lucide-react'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
 import ReleaseForm from '@/components/dashboard/ReleaseForm'
+import ReleaseTimeline from '@/components/dashboard/ReleaseTimeline'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import type { ReleaseWithTracks } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import StatusBadge from '@/components/StatusBadge'
 
-const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Rejected']
+const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Needs Changes', 'Rejected']
 const DELETABLE_STATUSES = ['Draft', 'Pending Review']
 
 export default function StatusPage() {
@@ -203,12 +204,24 @@ export default function StatusPage() {
                       Release date: {formatDate(release.release_date)}
                     </p>
 
-                    <ul className="mt-3 flex flex-col gap-1">
+                    <ReleaseTimeline status={release.status} />
+
+                    <ul className="mt-3 flex flex-col gap-2">
                       {release.tracks.map((track) => (
                         <li key={track.id} className="text-sm font-medium text-ink-soft">
-                          {track.track_number}. {track.song_title}
-                          {track.genre ? (
-                            <span className="text-ink-faint"> — {track.genre}</span>
+                          <p>
+                            {track.track_number}. {track.song_title}
+                            {track.genre ? (
+                              <span className="text-ink-faint"> — {track.genre}</span>
+                            ) : null}
+                          </p>
+                          {track.audio_url ? (
+                            <audio
+                              controls
+                              preload="none"
+                              src={track.audio_url}
+                              className="mt-1 h-8 w-full max-w-md"
+                            />
                           ) : null}
                         </li>
                       ))}
@@ -221,6 +234,13 @@ export default function StatusPage() {
                           Scheduled for removal on {formatDateTime(release.scheduled_deletion_at)}.
                           {release.deletion_reason ? <> Reason: {release.deletion_reason}</> : null}
                         </span>
+                      </p>
+                    ) : null}
+
+                    {release.status === 'Needs Changes' && release.admin_note ? (
+                      <p className="mt-3 rounded-md border-2 border-ink bg-canary/20 px-3 py-2 text-sm font-medium text-ink">
+                        <span className="font-bold">Changes requested: </span>
+                        {release.admin_note}
                       </p>
                     ) : null}
 
@@ -257,17 +277,19 @@ export default function StatusPage() {
                           Submit for review
                         </Button>
                       ) : null}
-                      {release.status === 'Rejected' ? (
+                      {release.status === 'Rejected' || release.status === 'Needs Changes' ? (
                         <Button
                           type="button"
                           variant="secondary"
                           onClick={() => setEditingId(release.id)}
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
-                          Resubmit
+                          {release.status === 'Rejected' ? 'Resubmit' : 'Fix & resubmit'}
                         </Button>
                       ) : null}
-                      {canEdit && release.status !== 'Rejected' ? (
+                      {canEdit &&
+                      release.status !== 'Rejected' &&
+                      release.status !== 'Needs Changes' ? (
                         <Button
                           type="button"
                           variant="ghost"

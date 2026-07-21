@@ -7,7 +7,7 @@ import type { ReleaseType, Track } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 const VALID_RELEASE_TYPES: ReleaseType[] = ['Single', 'EP', 'Album']
-const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Rejected']
+const EDITABLE_STATUSES = ['Draft', 'Pending Review', 'Needs Changes', 'Rejected']
 
 interface IncomingTrack {
   song_title?: string
@@ -15,6 +15,7 @@ interface IncomingTrack {
   audio_url?: string
   explicit?: boolean
   songwriter?: string | null
+  lyrics?: string | null
 }
 
 interface EditBody {
@@ -23,6 +24,8 @@ interface EditBody {
   release_type?: string
   cover_art_url?: string | null
   release_date?: string | null
+  language?: string | null
+  copyright?: string | null
   /** Optional explicit target status (only 'Draft' or 'Pending Review' are honored). */
   status?: 'Draft' | 'Pending Review'
   tracks?: IncomingTrack[]
@@ -91,18 +94,18 @@ export async function PATCH(
 
     if (!EDITABLE_STATUSES.includes(existing.status)) {
       return NextResponse.json(
-        { error: 'Only a draft, pending, or rejected release can be edited.' },
+        { error: 'Only a draft, pending, needs-changes, or rejected release can be edited.' },
         { status: 400 }
       )
     }
 
-    // Resulting status: an explicit target wins; otherwise a rejected
-    // release resubmits to Pending Review, and a draft/pending one keeps
-    // its current status (editing it doesn't change where it stands).
+    // Resulting status: an explicit target wins; otherwise a rejected or
+    // needs-changes release resubmits to Pending Review, and a draft/pending
+    // one keeps its current status (editing it doesn't change where it stands).
     const nextStatus =
       body.status === 'Draft' || body.status === 'Pending Review'
         ? body.status
-        : existing.status === 'Rejected'
+        : existing.status === 'Rejected' || existing.status === 'Needs Changes'
           ? 'Pending Review'
           : existing.status
 
@@ -113,8 +116,11 @@ export async function PATCH(
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
+        language: body.language?.trim() || null,
+        copyright: body.copyright?.trim() || null,
         status: nextStatus,
         rejection_reason: null,
+        admin_note: null,
       })
       .eq('id', id)
       .select('*')
@@ -146,6 +152,7 @@ export async function PATCH(
           audio_url: track.audio_url,
           explicit: track.explicit ?? false,
           songwriter: track.songwriter?.trim() || null,
+          lyrics: track.lyrics?.trim() || null,
         }))
       )
       .select('*')

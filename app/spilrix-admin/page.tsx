@@ -1,7 +1,16 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, LayoutDashboard, LogOut, Search, Settings, Users } from 'lucide-react'
+import {
+  BarChart3,
+  Disc3,
+  LayoutDashboard,
+  LifeBuoy,
+  LogOut,
+  Search,
+  Settings,
+  Users,
+} from 'lucide-react'
 import Logo from '@/components/Logo'
 import AdminGate from '@/components/admin/AdminGate'
 import ArtistRoster, {
@@ -13,6 +22,8 @@ import StorageUsageMeter from '@/components/admin/StorageUsageMeter'
 import AdminOverview from '@/components/admin/AdminOverview'
 import ActivityLogsPanel from '@/components/admin/ActivityLogsPanel'
 import AdminSettingsPanel from '@/components/admin/AdminSettingsPanel'
+import ReleaseManager from '@/components/admin/ReleaseManager'
+import TicketsList from '@/components/admin/TicketsList'
 import { cn } from '@/lib/utils'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
@@ -29,14 +40,28 @@ import type {
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
 
-type AdminTab = 'overview' | 'artists' | 'logs' | 'settings'
+type AdminTab = 'overview' | 'artists' | 'releases' | 'tickets' | 'logs' | 'settings'
 
 const ADMIN_TABS: { id: AdminTab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'artists', label: 'Artists', icon: Users },
+  { id: 'releases', label: 'Releases', icon: Disc3 },
+  { id: 'tickets', label: 'Tickets', icon: LifeBuoy },
   { id: 'logs', label: 'Activity', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
+
+const RELEASE_FILTERS = [
+  'All',
+  'Pending Review',
+  'Needs Changes',
+  'Approved',
+  'Sent to Platforms',
+  'Live',
+  'Rejected',
+] as const
+
+const TICKET_FILTERS = ['All', 'Open', 'Closed'] as const
 
 interface OverviewData {
   stats: {
@@ -72,6 +97,11 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [artistSearch, setArtistSearch] = useState('')
   const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null)
+  const [releaseSearch, setReleaseSearch] = useState('')
+  const [releaseFilter, setReleaseFilter] =
+    useState<(typeof RELEASE_FILTERS)[number]>('All')
+  const [ticketFilter, setTicketFilter] =
+    useState<(typeof TICKET_FILTERS)[number]>('All')
 
   useEffect(() => {
     if (!passcode) return
@@ -197,6 +227,27 @@ export default function AdminPage() {
         String(artist.display_id).includes(query)
     )
   }, [artists, artistSearch])
+
+  const filteredReleases = useMemo(() => {
+    let list = releases ?? []
+    if (releaseFilter !== 'All') {
+      list = list.filter((r) => r.status === releaseFilter)
+    }
+    const query = releaseSearch.trim().toLowerCase()
+    if (query) {
+      list = list.filter(
+        (r) =>
+          r.title.toLowerCase().includes(query) ||
+          r.artist_name.toLowerCase().includes(query)
+      )
+    }
+    return list
+  }, [releases, releaseFilter, releaseSearch])
+
+  const filteredTickets = useMemo(() => {
+    if (ticketFilter === 'All') return tickets ?? []
+    return (tickets ?? []).filter((t) => t.status === ticketFilter)
+  }, [tickets, ticketFilter])
 
   const selectedArtist = artists?.find((a) => a.id === selectedArtistId) ?? null
 
@@ -411,6 +462,95 @@ export default function AdminPage() {
                     onClose={() => setSelectedArtistId(null)}
                   />
                 ) : null}
+              </div>
+            ) : null}
+
+            {/* Releases (all releases incl. live-links management) */}
+            {activeTab === 'releases' ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <h2 className="font-display text-xl uppercase text-ink">
+                    Releases
+                    <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
+                      {filteredReleases.length}
+                    </span>
+                  </h2>
+
+                  <div className="relative w-full max-w-xs">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                    <input
+                      type="text"
+                      value={releaseSearch}
+                      onChange={(e) => setReleaseSearch(e.target.value)}
+                      placeholder="Search by title or artist…"
+                      className="w-full rounded-lg border-[3px] border-ink bg-white py-2 pl-9 pr-3 text-sm font-medium text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {RELEASE_FILTERS.map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setReleaseFilter(filter)}
+                      className={cn(
+                        'brutal-press rounded-md border-[2.5px] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-colors',
+                        releaseFilter === filter
+                          ? 'border-ink bg-canary text-ink shadow-[2px_2px_0_0_var(--color-ink)]'
+                          : 'border-ink bg-white text-ink-soft hover:bg-paper'
+                      )}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+
+                <ReleaseManager
+                  releases={filteredReleases}
+                  passcode={passcode}
+                  onReleaseChange={handleReleaseChange}
+                  emptyMessage="No releases match this filter."
+                />
+              </div>
+            ) : null}
+
+            {/* Tickets (global, across all artists) */}
+            {activeTab === 'tickets' ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <h2 className="font-display text-xl uppercase text-ink">
+                    Support tickets
+                    <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
+                      {filteredTickets.length}
+                    </span>
+                  </h2>
+
+                  <div className="flex flex-wrap gap-2">
+                    {TICKET_FILTERS.map((filter) => (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setTicketFilter(filter)}
+                        className={cn(
+                          'brutal-press rounded-md border-[2.5px] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-colors',
+                          ticketFilter === filter
+                            ? 'border-ink bg-canary text-ink shadow-[2px_2px_0_0_var(--color-ink)]'
+                            : 'border-ink bg-white text-ink-soft hover:bg-paper'
+                        )}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <TicketsList
+                  tickets={filteredTickets}
+                  passcode={passcode}
+                  onStatusChange={handleTicketStatusChange}
+                  onNewMessage={handleNewMessage}
+                />
               </div>
             ) : null}
 

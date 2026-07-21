@@ -86,6 +86,8 @@ export async function POST(
         release_type: original.release_type,
         cover_art_url: copiedCoverArtUrl,
         release_date: original.release_date,
+        language: original.language,
+        copyright: original.copyright,
         status: 'Draft',
       })
       .select('*')
@@ -106,6 +108,7 @@ export async function POST(
           audio_url: copiedTrackUrls[index],
           explicit: track.explicit,
           songwriter: track.songwriter,
+          lyrics: track.lyrics,
         }))
       )
       .select('*')

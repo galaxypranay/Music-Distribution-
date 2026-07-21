@@ -14,6 +14,7 @@ interface IncomingTrack {
   audio_url?: string
   explicit?: boolean
   songwriter?: string | null
+  lyrics?: string | null
 }
 
 interface CreateReleaseBody {
@@ -23,6 +24,8 @@ interface CreateReleaseBody {
   release_type?: string
   cover_art_url?: string | null
   release_date?: string | null
+  language?: string | null
+  copyright?: string | null
   /** Defaults to 'Pending Review'. Only 'Draft' may be passed explicitly. */
   status?: 'Draft' | 'Pending Review'
   tracks?: IncomingTrack[]
@@ -81,6 +84,8 @@ export async function POST(request: Request) {
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
+        language: body.language?.trim() || null,
+        copyright: body.copyright?.trim() || null,
         status,
       })
       .select('*')
@@ -101,6 +106,7 @@ export async function POST(request: Request) {
           audio_url: track.audio_url,
           explicit: track.explicit ?? false,
           songwriter: track.songwriter?.trim() || null,
+          lyrics: track.lyrics?.trim() || null,
         }))
       )
       .select('*')

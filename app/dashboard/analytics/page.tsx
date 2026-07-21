@@ -7,6 +7,54 @@ import type { ReleaseWithTracks } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import StatusBadge from '@/components/StatusBadge'
 
+const TYPE_COLORS: Record<string, string> = {
+  Single: 'bg-canary',
+  EP: 'bg-cobalt',
+  Album: 'bg-punch',
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  Draft: 'bg-surface-raised',
+  'Pending Review': 'bg-canary',
+  'Needs Changes': 'bg-canary-deep',
+  Approved: 'bg-cobalt',
+  'Sent to Platforms': 'bg-cobalt-deep',
+  Live: 'bg-lime',
+  Rejected: 'bg-punch',
+}
+
+interface BarRow {
+  label: string
+  count: number
+  colorClass: string
+}
+
+/** Horizontal bar chart in the house neobrutalist style — no chart library. */
+function BarChart({ rows }: { rows: BarRow[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.count))
+
+  return (
+    <div className="flex flex-col gap-3">
+      {rows.map(({ label, count, colorClass }) => (
+        <div key={label} className="grid grid-cols-[110px_1fr_2ch] items-center gap-3 sm:grid-cols-[150px_1fr_3ch]">
+          <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-soft">
+            {label}
+          </p>
+          <div className="h-6 rounded-md border-2 border-ink/25 bg-paper">
+            {count > 0 ? (
+              <div
+                className={`h-full rounded-[4px] border-2 border-ink ${colorClass} transition-all duration-500`}
+                style={{ width: `${Math.max(8, (count / max) * 100)}%` }}
+              />
+            ) : null}
+          </div>
+          <p className="text-right font-display text-sm text-ink">{count}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function AnalyticsPage() {
   const { artist } = useArtistSession()
   const [releases, setReleases] = useState<ReleaseWithTracks[]>([])
@@ -38,6 +86,7 @@ export default function AnalyticsPage() {
   const byStatus = {
     Draft: releases.filter((r) => r.status === 'Draft').length,
     'Pending Review': releases.filter((r) => r.status === 'Pending Review').length,
+    'Needs Changes': releases.filter((r) => r.status === 'Needs Changes').length,
     Approved: releases.filter((r) => r.status === 'Approved').length,
     'Sent to Platforms': releases.filter((r) => r.status === 'Sent to Platforms').length,
     Live: releases.filter((r) => r.status === 'Live').length,
@@ -87,22 +136,30 @@ export default function AnalyticsPage() {
                 </Card>
               ))}
             </div>
+            <Card className="mt-4 p-5">
+              <BarChart
+                rows={Object.entries(byType).map(([label, count]) => ({
+                  label,
+                  count,
+                  colorClass: TYPE_COLORS[label] ?? 'bg-canary',
+                }))}
+              />
+            </Card>
           </section>
 
           <section>
             <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
               By status
             </p>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {Object.entries(byStatus).map(([status, count]) => (
-                <Card key={status} className="p-4 text-center">
-                  <p className="font-display text-3xl text-ink">{count}</p>
-                  <p className="mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint">
-                    {status}
-                  </p>
-                </Card>
-              ))}
-            </div>
+            <Card className="p-5">
+              <BarChart
+                rows={Object.entries(byStatus).map(([label, count]) => ({
+                  label,
+                  count,
+                  colorClass: STATUS_COLORS[label] ?? 'bg-canary',
+                }))}
+              />
+            </Card>
           </section>
 
           <section>
