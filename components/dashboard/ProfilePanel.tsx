@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 import { useArtistSession } from '@/components/dashboard/SessionProvider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { saveSession } from '@/lib/session'
 import { getFileExtension, formatDate, slugify } from '@/lib/utils'
 import type { Artist } from '@/lib/types'
 import Card from '@/components/ui/Card'
@@ -26,7 +25,7 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ onClose }: ProfilePanelProps) {
-  const { artist, signOut } = useArtistSession()
+  const { artist, signOut, updateArtist } = useArtistSession()
 
   const [profile, setProfile] = useState<Artist | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -65,7 +64,7 @@ export default function ProfilePanel({ onClose }: ProfilePanelProps) {
   function handleUpdated(updated: Artist) {
     setProfile(updated)
     setIsEditing(false)
-    saveSession({ id: updated.id, name: updated.name, photo_url: updated.photo_url })
+    updateArtist({ name: updated.name, photo_url: updated.photo_url })
   }
 
   return (
