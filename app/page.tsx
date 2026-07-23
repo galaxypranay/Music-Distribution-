@@ -3,15 +3,33 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { isAuthRecoveryUrl } from '@/lib/auth-redirect'
 
 /**
  * Root gateway: logged-in (verified) users go to the dashboard,
  * everyone else goes to the login page.
+ *
+ * Exception: password-reset email links. When the Supabase email template
+ * (or a misconfigured redirect URL) lands the recovery link here instead of
+ * /reset-password, the URL carries recovery params (?code=… or
+ * #access_token=…&type=recovery). Those must reach /reset-password with the
+ * params intact — and BEFORE the Supabase client is created, because client
+ * creation consumes the code from the URL (detectSessionInUrl), logs the
+ * user in, and they'd end up on the dashboard instead of the reset form.
  */
 export default function RootPage() {
   const router = useRouter()
 
   useEffect(() => {
+    if (isAuthRecoveryUrl()) {
+      // Full page navigation (not router.replace) so /reset-password loads
+      // fresh and its Supabase client exchanges the code there.
+      window.location.replace(
+        `/reset-password${window.location.search}${window.location.hash}`
+      )
+      return
+    }
+
     getSupabaseBrowserClient()
       .auth.getSession()
       .then(({ data }) => {
