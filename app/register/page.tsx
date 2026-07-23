@@ -164,7 +164,7 @@ export default function RegisterPage() {
         </div>
 
         <Input
-          label="Artist name"
+          label="Full Name"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
