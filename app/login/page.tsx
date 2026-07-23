@@ -8,6 +8,7 @@ import AuthCard from '@/components/auth/AuthCard'
 import Button from '@/components/ui/Button'
 import { Input } from '@/components/ui/Field'
 import { getSupabaseBrowserClient, setAuthPersistence } from '@/lib/supabase/client'
+import { isAuthRecoveryUrl } from '@/lib/auth-redirect'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,6 +21,16 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
+    // A password-reset email link that landed here by mistake (default
+    // Supabase template + Site URL fallback) must go to /reset-password
+    // BEFORE the Supabase client touches the code in the URL.
+    if (isAuthRecoveryUrl()) {
+      window.location.replace(
+        `/reset-password${window.location.search}${window.location.hash}`
+      )
+      return
+    }
+
     // Success banners from other flows (?verified=1 after email confirmation,
     // ?reset=1 after a password reset). Read from window instead of
     // useSearchParams to avoid a Suspense boundary requirement at build time.
