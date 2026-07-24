@@ -30,11 +30,14 @@ function applyTheme(theme: Theme) {
  */
 export function useTheme() {
   // Start as 'light' on the server; sync to the real value after mount.
-  const [theme, setThemeState] = useState<Theme>('light')
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'light'
+    return readStoredTheme()
+  })
 
   useEffect(() => {
-    setThemeState(readStoredTheme())
-  }, [])
+    applyTheme(theme)
+  }, [theme])
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next)
