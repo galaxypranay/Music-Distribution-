@@ -7,26 +7,30 @@ import AuthCard from '@/components/auth/AuthCard'
 import Button from '@/components/ui/Button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
+function getInitialEmail(): string | null {
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  const fromQuery = params.get('email')
+  if (fromQuery) return fromQuery
+  return null
+}
+
 export default function VerifyEmailPage() {
-  const [email, setEmail] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(() => getInitialEmail())
   const [isSending, setIsSending] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const fromQuery = params.get('email')
-    if (fromQuery) {
-      setEmail(fromQuery)
-      return
-    }
     // No query param (e.g. bookmarked) — try the current auth user.
-    getSupabaseBrowserClient()
-      .auth.getSession()
-      .then(({ data }) => {
-        if (data.session?.user?.email) setEmail(data.session.user.email)
-      })
-  }, [])
+    if (!email) {
+      getSupabaseBrowserClient()
+        .auth.getSession()
+        .then(({ data }) => {
+          if (data.session?.user?.email) setEmail(data.session.user.email)
+        })
+    }
+  }, [email])
 
   async function handleResend() {
     if (!email) return
