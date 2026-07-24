@@ -10,6 +10,14 @@ import { Input } from '@/components/ui/Field'
 import { getSupabaseBrowserClient, setAuthPersistence } from '@/lib/supabase/client'
 import { isAuthRecoveryUrl } from '@/lib/auth-redirect'
 
+function getInitialNotice(): string | null {
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('verified') === '1') return 'Email verified! Log in to enter your dashboard.'
+  if (params.get('reset') === '1') return 'Password updated. Log in with your new password.'
+  return null
+}
+
 export default function LoginPage() {
   const router = useRouter()
 
@@ -18,7 +26,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice] = useState<string | null>(() => getInitialNotice())
 
   useEffect(() => {
     // A password-reset email link that landed here by mistake (default
@@ -29,16 +37,6 @@ export default function LoginPage() {
         `/reset-password${window.location.search}${window.location.hash}`
       )
       return
-    }
-
-    // Success banners from other flows (?verified=1 after email confirmation,
-    // ?reset=1 after a password reset). Read from window instead of
-    // useSearchParams to avoid a Suspense boundary requirement at build time.
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('verified') === '1') {
-      setNotice('Email verified! Log in to enter your dashboard.')
-    } else if (params.get('reset') === '1') {
-      setNotice('Password updated. Log in with your new password.')
     }
 
     // Already logged in (and verified)? Straight to the dashboard.
