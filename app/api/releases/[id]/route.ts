@@ -14,6 +14,7 @@ interface IncomingTrack {
   version?: string | null
   genre?: string | null
   audio_url?: string
+  duration?: number | null
   explicit?: boolean
   instrumental?: boolean
   isrc?: string | null
@@ -178,6 +179,7 @@ export async function PATCH(
           version: track.version?.trim() || null,
           genre: track.genre?.trim() || null,
           audio_url: track.audio_url,
+          duration: Number.isFinite(track.duration) ? Math.max(0, Math.round(track.duration!)) : null,
           explicit: track.explicit ?? false,
           instrumental: track.instrumental ?? false,
           isrc: track.isrc?.trim() || null,
