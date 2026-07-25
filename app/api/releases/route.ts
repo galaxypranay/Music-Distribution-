@@ -10,10 +10,17 @@ const VALID_RELEASE_TYPES: ReleaseType[] = ['Single', 'EP', 'Album']
 
 interface IncomingTrack {
   song_title?: string
+  version?: string | null
   genre?: string | null
   audio_url?: string
   explicit?: boolean
+  instrumental?: boolean
+  isrc?: string | null
+  language?: string | null
+  featuring_artists?: string | null
   songwriter?: string | null
+  composer?: string | null
+  producer?: string | null
   lyrics?: string | null
 }
 
@@ -21,10 +28,19 @@ interface CreateReleaseBody {
   artist_id?: string
   artist_name?: string
   title?: string
+  version?: string | null
   release_type?: string
   cover_art_url?: string | null
   release_date?: string | null
+  original_release_date?: string | null
+  primary_genre?: string | null
+  secondary_genre?: string | null
   language?: string | null
+  record_label?: string | null
+  primary_artist_spotify_url?: string | null
+  featuring_artists?: string | null
+  featuring_artist_spotify_urls?: string | null
+  distribution_platforms?: string[]
   copyright?: string | null
   /** Defaults to 'Pending Review'. Only 'Draft' may be passed explicitly. */
   status?: 'Draft' | 'Pending Review'
@@ -81,10 +97,21 @@ export async function POST(request: Request) {
         artist_id,
         artist_name: artist_name.trim(),
         title: title.trim(),
+        version: body.version?.trim() || null,
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
+        original_release_date: body.original_release_date || null,
+        primary_genre: body.primary_genre?.trim() || null,
+        secondary_genre: body.secondary_genre?.trim() || null,
         language: body.language?.trim() || null,
+        record_label: body.record_label?.trim() || null,
+        primary_artist_spotify_url: body.primary_artist_spotify_url?.trim() || null,
+        featuring_artists: body.featuring_artists?.trim() || null,
+        featuring_artist_spotify_urls: body.featuring_artist_spotify_urls?.trim() || null,
+        distribution_platforms: Array.isArray(body.distribution_platforms)
+          ? body.distribution_platforms.filter((platform) => typeof platform === 'string' && platform.trim()).map((platform) => platform.trim())
+          : [],
         copyright: body.copyright?.trim() || null,
         status,
       })
@@ -102,10 +129,17 @@ export async function POST(request: Request) {
           release_id: release.id,
           track_number: index + 1,
           song_title: track.song_title!.trim(),
+          version: track.version?.trim() || null,
           genre: track.genre?.trim() || null,
           audio_url: track.audio_url,
           explicit: track.explicit ?? false,
+          instrumental: track.instrumental ?? false,
+          isrc: track.isrc?.trim() || null,
+          language: track.language?.trim() || null,
+          featuring_artists: track.featuring_artists?.trim() || null,
           songwriter: track.songwriter?.trim() || null,
+          composer: track.composer?.trim() || null,
+          producer: track.producer?.trim() || null,
           lyrics: track.lyrics?.trim() || null,
         }))
       )
