@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Input, Select } from '@/components/ui/Field'
 import Button from '@/components/ui/Button'
 import { Plus, Trash2 } from 'lucide-react'
@@ -15,8 +14,6 @@ interface Step1ReleaseInfoProps {
 }
 
 export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: Step1ReleaseInfoProps) {
-  const [releaseDate, setReleaseDate] = useState(data.releaseDate)
-  const [originalReleaseDate, setOriginalReleaseDate] = useState(data.originalReleaseDate || '')
   // Empty trailing slots are intentionally retained. This lets a newly added
   // (but not yet filled) row remain visible in the controlled form.
   const featuringArtists = data.featuringArtists
@@ -168,23 +165,17 @@ export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: 
             label="Release Date"
             type="date"
             required
-            value={releaseDate}
-            onChange={(e) => {
-              setReleaseDate(e.target.value)
-              onChange({ releaseDate: e.target.value })
-            }}
+            value={data.releaseDate}
+            onChange={(e) => onChange({ releaseDate: e.target.value })}
             min={new Date().toISOString().split('T')[0]}
-            error={!releaseDate && 'Required'}
+            error={!data.releaseDate && 'Required'}
           />
 
           <Input
             label="Original Release Date (Optional)"
             type="date"
-            value={originalReleaseDate}
-            onChange={(e) => {
-              setOriginalReleaseDate(e.target.value)
-              onChange({ originalReleaseDate: e.target.value || undefined })
-            }}
+            value={data.originalReleaseDate || ''}
+            onChange={(e) => onChange({ originalReleaseDate: e.target.value || undefined })}
             placeholder="For re-releases"
           />
         </div>
