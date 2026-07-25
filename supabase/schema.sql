@@ -6,6 +6,11 @@
 -- this file — run the migration scripts in order instead:
 --   1. supabase/migration-ep-album.sql
 --   2. supabase/migration-profile-uid-scheduled-delete.sql
+--   3. supabase/migration-auth.sql
+--   4. supabase/migration-activity-logs-settings.sql
+--   5. supabase/migration-upload-release-metadata.sql
+--   6. supabase/migration-ticket-threads.sql
+--   7. supabase/migration-wav-audio-only.sql
 -- ============================================================================
 
 create extension if not exists "pgcrypto";
@@ -126,13 +131,24 @@ create table if not exists public.tickets (
   artist_id     uuid not null references public.artists (id) on delete cascade,
   artist_name   text not null,
   subject       text not null,
-  message       text not null,
   status        text not null default 'Open'
                   check (status in ('Open', 'Closed')),
   created_at    timestamptz not null default now()
 );
 
 create index if not exists tickets_artist_id_idx on public.tickets (artist_id);
+
+create table if not exists public.ticket_messages (
+  id               uuid primary key default gen_random_uuid(),
+  ticket_id        uuid not null references public.tickets (id) on delete cascade,
+  sender           text not null check (sender in ('artist', 'admin')),
+  message          text not null,
+  attachment_url   text,
+  attachment_name  text,
+  created_at       timestamptz not null default now()
+);
+
+create index if not exists ticket_messages_ticket_id_idx on public.ticket_messages (ticket_id);
 
 -- ----------------------------------------------------------------------------
 -- activity_logs
@@ -178,6 +194,7 @@ alter table public.artists       enable row level security;
 alter table public.releases      enable row level security;
 alter table public.tracks        enable row level security;
 alter table public.tickets       enable row level security;
+alter table public.ticket_messages enable row level security;
 alter table public.activity_logs enable row level security;
 alter table public.app_settings  enable row level security;
 
@@ -189,7 +206,7 @@ alter table public.app_settings  enable row level security;
 -- Storage buckets
 -- ============================================================================
 insert into storage.buckets (id, name, public)
-values ('profiles', 'profiles', true), ('songs', 'songs', true), ('covers', 'covers', true)
+values ('profiles', 'profiles', true), ('songs', 'songs', true), ('covers', 'covers', true), ('attachments', 'attachments', true)
 on conflict (id) do nothing;
 
 -- Public read so profile photos, cover art, and audio previews can be played
@@ -230,6 +247,15 @@ create policy "Public upload - covers"
   to anon, authenticated
   with check (bucket_id = 'covers');
 
+drop policy if exists "Public read access - attachments" on storage.objects;
+create policy "Public read access - attachments"
+  on storage.objects for select using (bucket_id = 'attachments');
+
+drop policy if exists "Public upload - attachments" on storage.objects;
+create policy "Public upload - attachments"
+  on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'attachments');
+
 -- ============================================================================
 -- Storage usage (for the admin control room's storage meter)
 --
@@ -249,7 +275,7 @@ as $$
     coalesce(sum((metadata->>'size')::bigint), 0) as total_bytes,
     count(*) as file_count
   from storage.objects
-  where bucket_id in ('profiles', 'songs', 'covers')
+  where bucket_id in ('profiles', 'songs', 'covers', 'attachments')
   group by bucket_id;
 $$;
 
