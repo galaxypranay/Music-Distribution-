@@ -87,24 +87,20 @@ export interface StepValidation {
   errors: string[]
 }
 
-// Default platforms - always available, non-removable defaults first
+// The core services are preselected for convenience, but every platform can
+// be turned on or off by the artist.
 export const DEFAULT_PLATFORMS: PlatformData[] = [
   { id: 'spotify', name: 'Spotify', isDefault: true, selected: true },
   { id: 'apple_music', name: 'Apple Music', isDefault: true, selected: true },
   { id: 'youtube_music', name: 'YouTube Music', isDefault: true, selected: true },
 ]
 
-// Optional platforms user can add/remove
+// Distribution services currently available to artists and listeners in India.
 export const OPTIONAL_PLATFORMS: Omit<PlatformData, 'selected'>[] = [
   { id: 'amazon_music', name: 'Amazon Music', isDefault: false },
-  { id: 'deezer', name: 'Deezer', isDefault: false },
-  { id: 'tiktok', name: 'TikTok', isDefault: false },
   { id: 'instagram_facebook', name: 'Instagram / Facebook', isDefault: false },
-  { id: 'boomplay', name: 'Boomplay', isDefault: false },
   { id: 'jiosaavn', name: 'JioSaavn', isDefault: false },
   { id: 'gaana', name: 'Gaana', isDefault: false },
-  { id: 'wynk_music', name: 'Wynk Music', isDefault: false },
-  { id: 'tidal', name: 'Tidal', isDefault: false },
 ]
 
 export const ADDITIONAL_PLATFORMS = OPTIONAL_PLATFORMS

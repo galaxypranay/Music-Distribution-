@@ -118,9 +118,6 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
         ...platform,
         selected: existingRelease?.release?.distribution_platforms?.includes(platform.name) || false,
       })),
-      ...(existingRelease?.release?.distribution_platforms || [])
-        .filter((name) => !DEFAULT_PLATFORMS.some((platform) => platform.name === name) && !ADDITIONAL_PLATFORMS.some((platform) => platform.name === name))
-        .map((name) => ({ id: `custom_${name.toLowerCase().replace(/\s+/g, '_')}`, name, isDefault: false, selected: true })),
     ],
     tracks: initialTracks,
     isSubmitting: false,
