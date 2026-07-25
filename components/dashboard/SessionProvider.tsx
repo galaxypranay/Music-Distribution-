@@ -57,6 +57,19 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
         return
       }
 
+      // All artist API calls carry the signed-in user's access token. The
+      // server independently resolves it to an artist profile, so IDs in
+      // URLs or request bodies can no longer be used to access another user.
+      const originalFetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+        if (!url.startsWith('/api/')) return originalFetch(input, init)
+
+        const headers = new Headers(init?.headers)
+        if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${session.access_token}`)
+        return originalFetch(input, { ...init, headers })
+      }
+
       // Load the artist profile for this auth user.
       let profile: ArtistSession | null = null
       const res = await fetch(`/api/artists?user_id=${user.id}`)
