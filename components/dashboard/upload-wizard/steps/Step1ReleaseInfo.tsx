@@ -17,17 +17,24 @@ interface Step1ReleaseInfoProps {
 export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: Step1ReleaseInfoProps) {
   const [releaseDate, setReleaseDate] = useState(data.releaseDate)
   const [originalReleaseDate, setOriginalReleaseDate] = useState(data.originalReleaseDate || '')
-  const featuringArtists = (data.featuringArtists || '').split(',').map((artist) => artist.trim()).filter(Boolean)
-  const featuringUrls = (data.featuringArtistSpotifyUrls || '').split('\n').map((url) => url.trim()).filter(Boolean)
+  // Empty trailing slots are intentionally retained. This lets a newly added
+  // (but not yet filled) row remain visible in the controlled form.
+  const featuringArtists = data.featuringArtists
+    ? data.featuringArtists.split(',').map((artist) => artist.trim())
+    : ['']
+  const featuringUrls = data.featuringArtistSpotifyUrls
+    ? data.featuringArtistSpotifyUrls.split('\n').map((url) => url.trim())
+    : ['']
+
   const featuringCredits = Array.from(
-    { length: Math.max(1, featuringArtists.length, featuringUrls.length) },
+    { length: Math.max(featuringArtists.length, featuringUrls.length, 1) },
     (_, index) => ({ artist: featuringArtists[index] || '', spotifyUrl: featuringUrls[index] || '' })
   )
 
   const updateFeaturingCredits = (credits: Array<{ artist: string; spotifyUrl: string }>) => {
     onChange({
-      featuringArtists: credits.map((credit) => credit.artist.trim()).filter(Boolean).join(', ') || undefined,
-      featuringArtistSpotifyUrls: credits.map((credit) => credit.spotifyUrl.trim()).filter(Boolean).join('\n') || undefined,
+      featuringArtists: credits.map((credit) => credit.artist.trim()).join(', ') || undefined,
+      featuringArtistSpotifyUrls: credits.map((credit) => credit.spotifyUrl.trim()).join('\n') || undefined,
     })
   }
 
