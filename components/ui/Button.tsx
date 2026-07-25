@@ -2,10 +2,12 @@ import type { ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Size = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   isLoading?: boolean
+  size?: Size
 }
 
 const VARIANT_STYLES: Record<Variant, string> = {
@@ -18,6 +20,7 @@ const VARIANT_STYLES: Record<Variant, string> = {
 export default function Button({
   variant = 'primary',
   isLoading = false,
+  size = 'md',
   disabled,
   className,
   children,
@@ -29,6 +32,8 @@ export default function Button({
       className={cn(
         'brutal-press inline-flex items-center justify-center gap-2 rounded-lg border-[3px] border-ink px-4 py-2.5 font-body text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_var(--color-ink)] transition-colors duration-150 disabled:cursor-not-allowed disabled:shadow-none',
         VARIANT_STYLES[variant],
+        size === 'sm' && 'px-2.5 py-1.5 text-xs border-[2px] shadow-[2px_2px_0_0_var(--color-ink)]',
+        size === 'lg' && 'px-5 py-3 text-base',
         className
       )}
       {...props}
