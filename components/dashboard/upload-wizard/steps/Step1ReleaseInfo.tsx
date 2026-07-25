@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Input, Select, Textarea } from '@/components/ui/Field'
+import { Input, Select } from '@/components/ui/Field'
 import Button from '@/components/ui/Button'
+import { Plus, Trash2 } from 'lucide-react'
 import { LANGUAGES, GENRES, RELEASE_TYPES, MIN_TRACKS_BY_TYPE } from '../types'
 import type { ReleaseInfoData } from '../types'
 
@@ -16,6 +17,19 @@ interface Step1ReleaseInfoProps {
 export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: Step1ReleaseInfoProps) {
   const [releaseDate, setReleaseDate] = useState(data.releaseDate)
   const [originalReleaseDate, setOriginalReleaseDate] = useState(data.originalReleaseDate || '')
+  const featuringArtists = (data.featuringArtists || '').split(',').map((artist) => artist.trim()).filter(Boolean)
+  const featuringUrls = (data.featuringArtistSpotifyUrls || '').split('\n').map((url) => url.trim()).filter(Boolean)
+  const featuringCredits = Array.from(
+    { length: Math.max(1, featuringArtists.length, featuringUrls.length) },
+    (_, index) => ({ artist: featuringArtists[index] || '', spotifyUrl: featuringUrls[index] || '' })
+  )
+
+  const updateFeaturingCredits = (credits: Array<{ artist: string; spotifyUrl: string }>) => {
+    onChange({
+      featuringArtists: credits.map((credit) => credit.artist.trim()).filter(Boolean).join(', ') || undefined,
+      featuringArtistSpotifyUrls: credits.map((credit) => credit.spotifyUrl.trim()).filter(Boolean).join('\n') || undefined,
+    })
+  }
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -86,23 +100,57 @@ export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: 
           placeholder="https://open.spotify.com/artist/..."
         />
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Textarea
-            label="Featuring Artists"
-            value={data.featuringArtists || ''}
-            onChange={(e) => onChange({ featuringArtists: e.target.value || undefined })}
-            placeholder="Feature 1, Feature 2"
-            rows={2}
-          />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">Featuring artists</p>
+              <p className="mt-1 text-xs text-ink-faint">Add each featured artist with their matching Spotify profile.</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => updateFeaturingCredits([...featuringCredits, { artist: '', spotifyUrl: '' }])}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add artist
+            </Button>
+          </div>
 
-          <Textarea
-            label="Featuring Artist Spotify URLs (one per line)"
-            value={data.featuringArtistSpotifyUrls || ''}
-            onChange={(e) => onChange({ featuringArtistSpotifyUrls: e.target.value || undefined })}
-            placeholder="https://open.spotify.com/artist/...
-https://open.spotify.com/artist/..."
-            rows={2}
-          />
+          {featuringCredits.map((credit, index) => (
+            <div key={index} className="rounded-xl border-[2.5px] border-ink bg-white p-4 shadow-[3px_3px_0_0_var(--color-ink)]">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+                  Featuring artist {index + 1}
+                </p>
+                {featuringCredits.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => updateFeaturingCredits(featuringCredits.filter((_, creditIndex) => creditIndex !== index))}
+                    className="inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase text-punch hover:underline"
+                    aria-label={`Remove featuring artist ${index + 1}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Featuring Artist"
+                  value={credit.artist}
+                  onChange={(e) => updateFeaturingCredits(featuringCredits.map((item, creditIndex) => creditIndex === index ? { ...item, artist: e.target.value } : item))}
+                  placeholder="Artist name"
+                />
+                <Input
+                  label="Spotify Profile URL"
+                  type="url"
+                  value={credit.spotifyUrl}
+                  onChange={(e) => updateFeaturingCredits(featuringCredits.map((item, creditIndex) => creditIndex === index ? { ...item, spotifyUrl: e.target.value } : item))}
+                  placeholder="https://open.spotify.com/artist/..."
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
