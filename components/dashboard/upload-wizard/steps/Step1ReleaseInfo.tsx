@@ -13,6 +13,12 @@ interface Step1ReleaseInfoProps {
   minTracks: number
 }
 
+function getLocalTodayIso() {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 10)
+}
+
 export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: Step1ReleaseInfoProps) {
   // Empty trailing slots are intentionally retained. This lets a newly added
   // (but not yet filled) row remain visible in the controlled form.
@@ -167,7 +173,7 @@ export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: 
             required
             value={data.releaseDate}
             onChange={(e) => onChange({ releaseDate: e.target.value })}
-            min={new Date().toISOString().split('T')[0]}
+            min={getLocalTodayIso()}
             error={!data.releaseDate && 'Required'}
           />
 
@@ -241,7 +247,7 @@ export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: 
         <Button
           type="button"
           variant="secondary"
-          onClick={() => onChange({ releaseDate: new Date().toISOString().split('T')[0] })}
+          onClick={() => onChange({ releaseDate: getLocalTodayIso() })}
         >
           Set Release Date to Today
         </Button>
