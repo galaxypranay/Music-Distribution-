@@ -21,7 +21,6 @@ export default function AdminSettingsPanel({
   const [maintenanceMode, setMaintenanceMode] = useState(settings.maintenance_mode)
   const [maxUploadMb, setMaxUploadMb] = useState(String(settings.max_upload_mb))
   const [imageFormats, setImageFormats] = useState(settings.allowed_image_formats.join(', '))
-  const [audioFormats, setAudioFormats] = useState(settings.allowed_audio_formats.join(', '))
 
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -43,18 +42,8 @@ export default function AdminSettingsPanel({
       .map((f) => f.trim().toLowerCase().replace(/^\./, ''))
       .filter(Boolean)
 
-    const parsedAudioFormats = audioFormats
-      .split(',')
-      .map((f) => f.trim().toLowerCase().replace(/^\./, ''))
-      .filter(Boolean)
-
     if (parsedImageFormats.length === 0) {
       setError('At least one image format is required.')
-      return
-    }
-
-    if (parsedAudioFormats.length === 0) {
-      setError('At least one audio format is required.')
       return
     }
 
@@ -71,7 +60,6 @@ export default function AdminSettingsPanel({
           maintenance_mode: maintenanceMode,
           max_upload_mb: maxMb,
           allowed_image_formats: parsedImageFormats,
-          allowed_audio_formats: parsedAudioFormats,
         }),
       })
 
@@ -168,20 +156,10 @@ export default function AdminSettingsPanel({
                 className="w-full rounded-lg border-[3px] border-ink bg-white px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
               />
             </div>
-            <div>
-              <label
-                htmlFor="audio-formats"
-                className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint"
-              >
-                Audio (comma-separated)
-              </label>
-              <input
-                id="audio-formats"
-                value={audioFormats}
-                onChange={(e) => setAudioFormats(e.target.value)}
-                placeholder="mp3, wav, flac, aac, ogg"
-                className="w-full rounded-lg border-[3px] border-ink bg-white px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
-              />
+            <div className="rounded-lg border-[3px] border-ink bg-paper px-3.5 py-2.5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">Audio uploads</p>
+              <p className="mt-1 font-body text-sm font-bold text-ink">WAV only</p>
+              <p className="mt-0.5 text-xs text-ink-soft">The artist upload flow accepts only .wav files.</p>
             </div>
           </div>
         </div>
