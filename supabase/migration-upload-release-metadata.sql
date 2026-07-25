@@ -17,6 +17,7 @@ alter table public.releases add column if not exists featuring_artist_spotify_ur
 alter table public.releases add column if not exists distribution_platforms text[] not null default array[]::text[];
 
 alter table public.tracks add column if not exists version text;
+alter table public.tracks add column if not exists duration integer;
 alter table public.tracks add column if not exists instrumental boolean not null default false;
 alter table public.tracks add column if not exists isrc text;
 alter table public.tracks add column if not exists language text;

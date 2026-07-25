@@ -103,6 +103,7 @@ create table if not exists public.tracks (
   version       text,
   genre         text,
   audio_url     text not null,
+  duration      integer,
   explicit      boolean not null default false,
   instrumental  boolean not null default false,
   isrc          text,
