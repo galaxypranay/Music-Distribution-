@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   maintenance_mode: false,
   max_upload_mb: 50,
   allowed_image_formats: ['jpg', 'jpeg', 'png', 'webp'],
-  allowed_audio_formats: ['mp3', 'wav', 'flac', 'aac', 'ogg'],
+  allowed_audio_formats: ['wav'],
 }
 
 const GENRES = [
@@ -142,7 +142,7 @@ export default function ReleaseForm({
           setUploadSettings({
             max_upload_mb: data.max_upload_mb,
             allowed_image_formats: data.allowed_image_formats ?? DEFAULT_SETTINGS.allowed_image_formats,
-            allowed_audio_formats: data.allowed_audio_formats ?? DEFAULT_SETTINGS.allowed_audio_formats,
+            allowed_audio_formats: ['wav'],
           })
         }
       })
