@@ -35,14 +35,16 @@ function FieldLabel({ label, hint, required, htmlFor }: FieldWrapperProps) {
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   hint?: string
+  error?: string | boolean
 }
 
-export function Input({ label, hint, id, required, className, ...props }: InputProps) {
+export function Input({ label, hint, error, id, required, className, ...props }: InputProps) {
   const fieldId = id ?? label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div>
       <FieldLabel label={label} hint={hint} required={required} htmlFor={fieldId} />
-      <input id={fieldId} required={required} className={cn(FIELD_BASE, className)} {...props} />
+      <input id={fieldId} required={required} aria-invalid={Boolean(error)} className={cn(FIELD_BASE, error && 'border-punch', className)} {...props} />
+      {typeof error === 'string' ? <p className="mt-1 text-xs font-medium text-punch">{error}</p> : null}
     </div>
   )
 }
@@ -50,9 +52,10 @@ export function Input({ label, hint, id, required, className, ...props }: InputP
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string
   hint?: string
+  error?: string | boolean
 }
 
-export function Select({ label, hint, id, required, className, children, ...props }: SelectProps) {
+export function Select({ label, hint, error, id, required, className, children, ...props }: SelectProps) {
   const fieldId = id ?? label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div>
@@ -60,11 +63,13 @@ export function Select({ label, hint, id, required, className, children, ...prop
       <select
         id={fieldId}
         required={required}
-        className={cn(FIELD_BASE, 'cursor-pointer appearance-none', className)}
+        aria-invalid={Boolean(error)}
+        className={cn(FIELD_BASE, 'cursor-pointer appearance-none', error && 'border-punch', className)}
         {...props}
       >
         {children}
       </select>
+      {typeof error === 'string' ? <p className="mt-1 text-xs font-medium text-punch">{error}</p> : null}
     </div>
   )
 }
