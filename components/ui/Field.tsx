@@ -57,6 +57,12 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string | boolean
 }
 
+function getOptionLabel(children: ReactNode) {
+  return Children.toArray(children)
+    .map((child) => typeof child === 'string' || typeof child === 'number' ? String(child) : '')
+    .join('')
+}
+
 export function Select({
   label,
   hint,
@@ -79,8 +85,8 @@ export function Select({
   const options = Children.toArray(children)
     .filter((child): child is ReactElement<{ value?: string | number; disabled?: boolean; children?: ReactNode }> => isValidElement(child) && child.type === 'option')
     .map((option) => ({
-      value: String(option.props.value ?? option.props.children ?? ''),
-      label: String(option.props.children ?? option.props.value ?? ''),
+      value: String(option.props.value ?? getOptionLabel(option.props.children) ?? ''),
+      label: getOptionLabel(option.props.children) || String(option.props.value ?? ''),
       disabled: option.props.disabled ?? false,
     }))
   const selectedOption = options.find((option) => option.value === selectedValue)
