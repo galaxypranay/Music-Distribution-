@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,9 @@ export async function POST(
     return NextResponse.json({ error: 'artist_id and message are required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, body.artist_id)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -30,7 +34,7 @@ export async function POST(
       .single()
 
     if (fetchError || !ticket) return NextResponse.json({ error: 'Ticket not found.' }, { status: 404 })
-    if (ticket.artist_id !== body.artist_id) return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
+    if (ticket.artist_id !== auth.artist.id) return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     if (ticket.status === 'Closed') {
       return NextResponse.json({ error: 'This ticket is closed. It must be reopened before you can reply.' }, { status: 400 })
     }

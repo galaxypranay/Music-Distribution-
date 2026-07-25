@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/log-activity'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,9 @@ export async function POST(
     return NextResponse.json({ error: 'artist_id is required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, body.artist_id)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -34,7 +38,7 @@ export async function POST(
       return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
     }
 
-    if (existing.artist_id !== body.artist_id) {
+    if (existing.artist_id !== auth.artist.id) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     }
 
@@ -54,7 +58,7 @@ export async function POST(
     }
 
     await logActivity(supabase, {
-      artistId: body.artist_id,
+      artistId: auth.artist.id,
       artistName: release.artist_name,
       action: 'release_submitted',
       detail: `${release.title} (${release.release_type})`,

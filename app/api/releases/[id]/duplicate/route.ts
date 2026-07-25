@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
 import { logActivity } from '@/lib/log-activity'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +49,9 @@ export async function POST(
     return NextResponse.json({ error: 'artist_id is required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, body.artist_id)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -61,7 +65,7 @@ export async function POST(
       return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
     }
 
-    if (original.artist_id !== body.artist_id) {
+    if (original.artist_id !== auth.artist.id) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     }
 
@@ -83,10 +87,19 @@ export async function POST(
         artist_id: original.artist_id,
         artist_name: original.artist_name,
         title: `${original.title} (Copy)`,
+        version: original.version,
         release_type: original.release_type,
         cover_art_url: copiedCoverArtUrl,
         release_date: original.release_date,
+        original_release_date: original.original_release_date,
+        primary_genre: original.primary_genre,
+        secondary_genre: original.secondary_genre,
         language: original.language,
+        record_label: original.record_label,
+        primary_artist_spotify_url: original.primary_artist_spotify_url,
+        featuring_artists: original.featuring_artists,
+        featuring_artist_spotify_urls: original.featuring_artist_spotify_urls,
+        distribution_platforms: original.distribution_platforms ?? [],
         copyright: original.copyright,
         status: 'Draft',
       })
@@ -104,10 +117,18 @@ export async function POST(
           release_id: copy.id,
           track_number: index + 1,
           song_title: track.song_title,
+          version: track.version,
           genre: track.genre,
           audio_url: copiedTrackUrls[index],
+          duration: track.duration,
           explicit: track.explicit,
+          instrumental: track.instrumental,
+          isrc: track.isrc,
+          language: track.language,
+          featuring_artists: track.featuring_artists,
           songwriter: track.songwriter,
+          composer: track.composer,
+          producer: track.producer,
           lyrics: track.lyrics,
         }))
       )
@@ -119,7 +140,7 @@ export async function POST(
     }
 
     await logActivity(supabase, {
-      artistId: body.artist_id,
+      artistId: auth.artist.id,
       artistName: original.artist_name,
       action: 'release_duplicated',
       detail: `"${original.title}" → "${copy.title}" (${copy.release_type})`,

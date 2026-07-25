@@ -54,8 +54,9 @@ export async function PATCH(request: Request) {
   if (body.max_upload_mb !== undefined) update.max_upload_mb = body.max_upload_mb
   if (body.allowed_image_formats !== undefined)
     update.allowed_image_formats = body.allowed_image_formats
-  if (body.allowed_audio_formats !== undefined)
-    update.allowed_audio_formats = body.allowed_audio_formats
+  // Audio delivery is intentionally WAV-only. Ignore legacy clients that
+  // still submit an editable audio-format list.
+  update.allowed_audio_formats = ['wav']
 
   try {
     const supabase = getSupabaseAdminClient()

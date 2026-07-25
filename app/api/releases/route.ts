@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { processScheduledDeletions } from '@/lib/process-scheduled-deletions'
 import { logActivity } from '@/lib/log-activity'
+import { requireArtist } from '@/lib/api-auth'
 import type { ReleaseType } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -67,6 +68,9 @@ export async function POST(request: Request) {
     )
   }
 
+  const auth = await requireArtist(request, artist_id)
+  if ('response' in auth) return auth.response
+
   if (!releaseType || !VALID_RELEASE_TYPES.includes(releaseType)) {
     return NextResponse.json(
       { error: `release_type must be one of: ${VALID_RELEASE_TYPES.join(', ')}` },
@@ -95,8 +99,8 @@ export async function POST(request: Request) {
     const { data: release, error: releaseError } = await supabase
       .from('releases')
       .insert({
-        artist_id,
-        artist_name: artist_name.trim(),
+        artist_id: auth.artist.id,
+        artist_name: auth.artist.name,
         title: title.trim(),
         version: body.version?.trim() || null,
         release_type: releaseType,
@@ -154,8 +158,8 @@ export async function POST(request: Request) {
     }
 
     await logActivity(supabase, {
-      artistId: artist_id,
-      artistName: artist_name,
+      artistId: auth.artist.id,
+      artistName: auth.artist.name,
       action: release.status === 'Draft' ? 'release_submitted' : 'release_submitted',
       detail: `${release.title} (${release.release_type}) — ${release.status}`,
     })
@@ -178,6 +182,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'artist_id query parameter is required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, artistId)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -186,7 +193,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('releases')
       .select('*, tracks(*)')
-      .eq('artist_id', artistId)
+      .eq('artist_id', auth.artist.id)
       .order('created_at', { ascending: false })
 
     if (error) {

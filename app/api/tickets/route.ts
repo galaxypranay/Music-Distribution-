@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/log-activity'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,12 +30,15 @@ export async function POST(request: Request) {
     )
   }
 
+  const auth = await requireArtist(request, artist_id)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .insert({ artist_id, artist_name: artist_name.trim(), subject: subject.trim(), status: 'Open' })
+      .insert({ artist_id: auth.artist.id, artist_name: auth.artist.name, subject: subject.trim(), status: 'Open' })
       .select('*')
       .single()
 
@@ -57,7 +61,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: messageError.message }, { status: 500 })
     }
 
-    await logActivity(supabase, { artistId: artist_id, artistName: artist_name, action: 'ticket_opened', detail: subject })
+    await logActivity(supabase, { artistId: auth.artist.id, artistName: auth.artist.name, action: 'ticket_opened', detail: subject })
 
     return NextResponse.json({ ticket: { ...ticket, messages: [firstMessage] } }, { status: 201 })
   } catch (err) {
@@ -70,12 +74,15 @@ export async function GET(request: Request) {
   const artistId = searchParams.get('artist_id')
   if (!artistId) return NextResponse.json({ error: 'artist_id is required.' }, { status: 400 })
 
+  const auth = await requireArtist(request, artistId)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*, messages:ticket_messages(*)')
-      .eq('artist_id', artistId)
+      .eq('artist_id', auth.artist.id)
       .order('created_at', { ascending: false })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

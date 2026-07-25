@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/log-activity'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  const auth = await requireArtist(request, id)
+  if ('response' in auth) return auth.response
 
   try {
     const supabase = getSupabaseAdminClient()
@@ -33,6 +37,9 @@ interface UpdateArtistBody {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  const auth = await requireArtist(request, id)
+  if ('response' in auth) return auth.response
 
   let body: UpdateArtistBody
   try {

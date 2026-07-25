@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
 import { logActivity } from '@/lib/log-activity'
 import type { ReleaseType, Track } from '@/lib/types'
+import { requireArtist } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +69,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'artist_id and title are required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, artist_id)
+  if ('response' in auth) return auth.response
+
   if (!releaseType || !VALID_RELEASE_TYPES.includes(releaseType)) {
     return NextResponse.json(
       { error: `release_type must be one of: ${VALID_RELEASE_TYPES.join(', ')}` },
@@ -97,7 +101,7 @@ export async function PATCH(
     // being silently rewritten.
     const { data: existing, error: fetchError } = await supabase
       .from('releases')
-      .select('id, artist_id, status')
+      .select('*, tracks(*)')
       .eq('id', id)
       .single()
 
@@ -105,7 +109,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
     }
 
-    if (existing.artist_id !== artist_id) {
+    if (existing.artist_id !== auth.artist.id) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     }
 
@@ -126,23 +130,27 @@ export async function PATCH(
           ? 'Pending Review'
           : existing.status
 
+    // The status-page editor is intentionally smaller than the upload wizard.
+    // Preserve wizard-only metadata unless this request explicitly supplies it.
     const { data: release, error: updateError } = await supabase
       .from('releases')
       .update({
         title: title.trim(),
-        version: body.version?.trim() || null,
+        version: body.version === undefined ? existing.version : body.version?.trim() || null,
         release_type: releaseType,
         cover_art_url: cover_art_url ?? null,
         release_date: release_date || null,
-        original_release_date: body.original_release_date || null,
-        primary_genre: body.primary_genre?.trim() || null,
-        secondary_genre: body.secondary_genre?.trim() || null,
-        language: body.language?.trim() || null,
-        record_label: body.record_label?.trim() || null,
-        primary_artist_spotify_url: body.primary_artist_spotify_url?.trim() || null,
-        featuring_artists: body.featuring_artists?.trim() || null,
-        featuring_artist_spotify_urls: body.featuring_artist_spotify_urls?.trim() || null,
-        distribution_platforms: Array.isArray(body.distribution_platforms)
+        original_release_date: body.original_release_date === undefined ? existing.original_release_date : body.original_release_date || null,
+        primary_genre: body.primary_genre === undefined ? existing.primary_genre : body.primary_genre?.trim() || null,
+        secondary_genre: body.secondary_genre === undefined ? existing.secondary_genre : body.secondary_genre?.trim() || null,
+        language: body.language === undefined ? existing.language : body.language?.trim() || null,
+        record_label: body.record_label === undefined ? existing.record_label : body.record_label?.trim() || null,
+        primary_artist_spotify_url: body.primary_artist_spotify_url === undefined ? existing.primary_artist_spotify_url : body.primary_artist_spotify_url?.trim() || null,
+        featuring_artists: body.featuring_artists === undefined ? existing.featuring_artists : body.featuring_artists?.trim() || null,
+        featuring_artist_spotify_urls: body.featuring_artist_spotify_urls === undefined ? existing.featuring_artist_spotify_urls : body.featuring_artist_spotify_urls?.trim() || null,
+        distribution_platforms: body.distribution_platforms === undefined
+          ? existing.distribution_platforms
+          : Array.isArray(body.distribution_platforms)
           ? body.distribution_platforms.filter((platform) => typeof platform === 'string' && platform.trim()).map((platform) => platform.trim())
           : [],
         copyright: body.copyright?.trim() || null,
@@ -169,27 +177,33 @@ export async function PATCH(
       return NextResponse.json({ error: deleteTracksError.message }, { status: 500 })
     }
 
+    const previousTracks = ((existing.tracks ?? []) as IncomingTrack[]).sort(
+      (a, b) => ((a as IncomingTrack & { track_number?: number }).track_number ?? 0) - ((b as IncomingTrack & { track_number?: number }).track_number ?? 0)
+    )
     const { data: insertedTracks, error: tracksError } = await supabase
       .from('tracks')
       .insert(
-        tracks.map((track, index) => ({
+        tracks.map((track, index) => {
+          const previous = previousTracks[index]
+          return ({
           release_id: id,
           track_number: index + 1,
           song_title: track.song_title!.trim(),
-          version: track.version?.trim() || null,
+          version: track.version === undefined ? previous?.version ?? null : track.version?.trim() || null,
           genre: track.genre?.trim() || null,
           audio_url: track.audio_url,
-          duration: Number.isFinite(track.duration) ? Math.max(0, Math.round(track.duration!)) : null,
+          duration: track.duration === undefined ? previous?.duration ?? null : Number.isFinite(track.duration) ? Math.max(0, Math.round(track.duration!)) : null,
           explicit: track.explicit ?? false,
-          instrumental: track.instrumental ?? false,
-          isrc: track.isrc?.trim() || null,
-          language: track.language?.trim() || null,
-          featuring_artists: track.featuring_artists?.trim() || null,
+          instrumental: track.instrumental === undefined ? previous?.instrumental ?? false : track.instrumental,
+          isrc: track.isrc === undefined ? previous?.isrc ?? null : track.isrc?.trim() || null,
+          language: track.language === undefined ? previous?.language ?? null : track.language?.trim() || null,
+          featuring_artists: track.featuring_artists === undefined ? previous?.featuring_artists ?? null : track.featuring_artists?.trim() || null,
           songwriter: track.songwriter?.trim() || null,
-          composer: track.composer?.trim() || null,
-          producer: track.producer?.trim() || null,
+          composer: track.composer === undefined ? previous?.composer ?? null : track.composer?.trim() || null,
+          producer: track.producer === undefined ? previous?.producer ?? null : track.producer?.trim() || null,
           lyrics: track.lyrics?.trim() || null,
-        }))
+          })
+        })
       )
       .select('*')
 
@@ -198,7 +212,7 @@ export async function PATCH(
     }
 
     await logActivity(supabase, {
-      artistId: artist_id,
+      artistId: auth.artist.id,
       artistName: release.artist_name,
       action: 'release_edited',
       detail: `${release.title} (${release.release_type}) — now ${release.status}`,
@@ -223,6 +237,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'artist_id query parameter is required.' }, { status: 400 })
   }
 
+  const auth = await requireArtist(request, artistId)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -236,7 +253,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Release not found.' }, { status: 404 })
     }
 
-    if (release.artist_id !== artistId) {
+    if (release.artist_id !== auth.artist.id) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 })
     }
 
@@ -275,7 +292,7 @@ export async function DELETE(
     }
 
     await logActivity(supabase, {
-      artistId: artistId,
+      artistId: auth.artist.id,
       artistName: release.artist_name,
       action: 'release_deleted',
       detail: `${release.title} (${release.release_type})`,

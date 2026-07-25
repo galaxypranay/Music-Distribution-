@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/log-activity'
+import { requireUser } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'user_id is required.' }, { status: 400 })
   }
 
+  const auth = await requireUser(request, body.user_id)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
@@ -40,7 +44,7 @@ export async function POST(request: Request) {
     const { data: existing } = await supabase
       .from('artists')
       .select('*')
-      .eq('user_id', body.user_id)
+      .eq('user_id', auth.user.id)
       .maybeSingle()
 
     if (existing) {
@@ -52,8 +56,8 @@ export async function POST(request: Request) {
       .insert({
         name,
         photo_url: body.photo_url ?? null,
-        user_id: body.user_id,
-        email: body.email?.trim() || null,
+        user_id: auth.user.id,
+        email: auth.user.email ?? (body.email?.trim() || null),
       })
       .select('*')
       .single()
@@ -84,13 +88,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'user_id query parameter is required.' }, { status: 400 })
   }
 
+  const auth = await requireUser(request, userId)
+  if ('response' in auth) return auth.response
+
   try {
     const supabase = getSupabaseAdminClient()
 
     const { data, error } = await supabase
       .from('artists')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', auth.user.id)
       .maybeSingle()
 
     if (error) {
