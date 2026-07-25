@@ -29,10 +29,19 @@ export interface Release {
   artist_id: string
   artist_name: string
   title: string
+  version: string | null
   release_type: ReleaseType
   cover_art_url: string | null
   release_date: string | null
+  original_release_date: string | null
+  primary_genre: string | null
+  secondary_genre: string | null
   language: string | null
+  record_label: string | null
+  primary_artist_spotify_url: string | null
+  featuring_artists: string | null
+  featuring_artist_spotify_urls: string | null
+  distribution_platforms: string[]
   copyright: string | null
   status: ReleaseStatus
   rejection_reason: string | null
@@ -52,10 +61,17 @@ export interface Track {
   release_id: string
   track_number: number
   song_title: string
+  version: string | null
   genre: string | null
   audio_url: string
   explicit: boolean
+  instrumental: boolean
+  isrc: string | null
+  language: string | null
+  featuring_artists: string | null
   songwriter: string | null
+  composer: string | null
+  producer: string | null
   lyrics: string | null
   created_at: string
 }
