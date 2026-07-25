@@ -25,6 +25,12 @@ import {
   DRAFT_VERSION,
 } from '../types'
 
+function getLocalTodayIso() {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 10)
+}
+
 interface UseUploadWizardOptions {
   mode: 'create' | 'edit'
   artistId: string
@@ -226,7 +232,9 @@ export function useUploadWizard({
         if (!releaseInfo.title?.trim()) errors.push('Release title is required')
         if (!releaseInfo.primaryArtist?.trim()) errors.push('Primary artist is required')
         if (!releaseInfo.releaseDate) errors.push('Release date is required')
-        else if (new Date(releaseInfo.releaseDate) < new Date(new Date().setHours(0, 0, 0, 0))) {
+        // Date inputs produce YYYY-MM-DD values. Comparing those strings avoids
+        // UTC parsing and timezone shifts that could mark today's date as past.
+        else if (releaseInfo.releaseDate < getLocalTodayIso()) {
           errors.push('Release date cannot be in the past')
         }
         if (!releaseInfo.primaryGenre) errors.push('Primary genre is required')
@@ -328,10 +336,15 @@ export function useUploadWizard({
           ...prev,
           releaseInfo: newReleaseInfo,
           tracks: newTracks,
+          validationErrors: { ...prev.validationErrors, 1: [] },
         }
       }
 
-      return { ...prev, releaseInfo: newReleaseInfo }
+      return {
+        ...prev,
+        releaseInfo: newReleaseInfo,
+        validationErrors: { ...prev.validationErrors, 1: [] },
+      }
     })
   }, [])
 
