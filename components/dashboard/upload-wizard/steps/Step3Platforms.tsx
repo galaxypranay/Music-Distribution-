@@ -3,7 +3,19 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
-import { Plus, X, Lock, Check } from 'lucide-react'
+import { Plus, X, Lock, Check, Music2 } from 'lucide-react'
+import { FaAmazon } from 'react-icons/fa'
+import {
+  SiApplemusic,
+  SiDeezer,
+  SiFacebook,
+  SiInstagram,
+  SiSpotify,
+  SiTidal,
+  SiTiktok,
+  SiYoutubemusic,
+} from 'react-icons/si'
+import type { IconType } from 'react-icons'
 import type { PlatformData } from '../types'
 import { OPTIONAL_PLATFORMS } from '../types'
 
@@ -12,16 +24,26 @@ interface Step3PlatformsProps {
   onPlatformsChange: (platforms: PlatformData[]) => void
 }
 
-const PLATFORM_ICONS: Record<string, string> = {
-  spotify: '🟢',
-  apple_music: '🍎',
-  youtube_music: '🔴',
-  amazon_music: '🟠',
-  deezer: '💜',
-  tiktok: '⚫',
-  instagram_facebook: '📷',
-  boomplay: '🎵',
-  jiosaavn: '🎶',
+const PLATFORM_ICONS: Record<string, IconType | IconType[]> = {
+  spotify: SiSpotify,
+  apple_music: SiApplemusic,
+  youtube_music: SiYoutubemusic,
+  amazon_music: FaAmazon,
+  deezer: SiDeezer,
+  tidal: SiTidal,
+  tiktok: SiTiktok,
+  instagram_facebook: [SiInstagram, SiFacebook],
+}
+
+function PlatformIcon({ platformId }: { platformId: string }) {
+  const icon = PLATFORM_ICONS[platformId]
+  const icons = Array.isArray(icon) ? icon : [icon ?? Music2]
+
+  return (
+    <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
+      {icons.map((Icon, index) => <Icon key={index} className="h-6 w-6 text-ink" />)}
+    </span>
+  )
 }
 
 export default function Step3Platforms({ platforms, onPlatformsChange }: Step3PlatformsProps) {
@@ -104,7 +126,7 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{PLATFORM_ICONS[platform.id] || '🎵'}</span>
+                  <PlatformIcon platformId={platform.id} />
                   <span className="font-body font-medium text-ink truncate">{platform.name}</span>
                 </div>
                 <p className="font-mono text-[10px] text-ink-faint">Default — cannot be removed</p>
@@ -141,7 +163,7 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{PLATFORM_ICONS[opt.id] || '🎵'}</span>
+                    <PlatformIcon platformId={opt.id} />
                     <span className="font-body font-medium text-ink truncate">{opt.name}</span>
                   </div>
                   <p className="font-mono text-[10px] text-ink-faint">Optional</p>
@@ -172,7 +194,7 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">🎵</span>
+                <PlatformIcon platformId={platform.id} />
                   <span className="font-body font-medium text-ink truncate">{platform.name}</span>
                 </div>
                 <p className="font-mono text-[10px] text-ink-faint">Custom platform</p>
