@@ -21,6 +21,9 @@ create table if not exists public.artists (
   -- WhatsApp/phone than a UUID. Shown on the artist's profile panel and
   -- searchable in the admin roster.
   display_id      integer not null default nextval('public.artist_uid_seq') unique,
+  -- Supabase Auth link. NULL only for legacy rows created before auth existed.
+  user_id         uuid unique references auth.users (id) on delete set null,
+  email           text,
   name            text not null,
   photo_url       text,
   instagram_url   text,
@@ -31,6 +34,7 @@ create table if not exists public.artists (
 
 create index if not exists artists_name_idx on public.artists (name);
 create index if not exists artists_display_id_idx on public.artists (display_id);
+create index if not exists artists_user_id_idx on public.artists (user_id);
 
 -- ----------------------------------------------------------------------------
 -- releases
@@ -45,11 +49,20 @@ create table if not exists public.releases (
   artist_id              uuid not null references public.artists (id) on delete cascade,
   artist_name            text not null,
   title                  text not null,
+  version                text,
   release_type           text not null default 'Single'
                            check (release_type in ('Single', 'EP', 'Album')),
   cover_art_url          text,
   release_date           date,
+  original_release_date  date,
+  primary_genre          text,
+  secondary_genre        text,
   language               text,
+  record_label           text,
+  primary_artist_spotify_url text,
+  featuring_artists      text,
+  featuring_artist_spotify_urls text,
+  distribution_platforms text[] not null default array[]::text[],
   copyright              text,
   status                 text not null default 'Pending Review'
                            check (status in (
@@ -87,10 +100,17 @@ create table if not exists public.tracks (
   release_id    uuid not null references public.releases (id) on delete cascade,
   track_number  int not null default 1,
   song_title    text not null,
+  version       text,
   genre         text,
   audio_url     text not null,
   explicit      boolean not null default false,
+  instrumental  boolean not null default false,
+  isrc          text,
+  language      text,
+  featuring_artists text,
   songwriter    text,
+  composer      text,
+  producer      text,
   lyrics        text,
   created_at    timestamptz not null default now()
 );
