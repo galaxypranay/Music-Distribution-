@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
 import { Input, Select, Textarea } from '@/components/ui/Field'
 import Button from '@/components/ui/Button'
 import { LANGUAGES, GENRES, RELEASE_TYPES, MIN_TRACKS_BY_TYPE } from '../types'
@@ -32,7 +31,7 @@ export default function Step1ReleaseInfo({ data, onChange, errors, minTracks }: 
       )}
 
       <section className="space-y-4">
-        <h3 className="font-display text-xl uppercase text-ink">Release Type & Title</h3>
+        <h3 className="font-display text-xl uppercase text-ink">Release Type & Title <span className="font-mono text-xs text-ink-faint">({minTracks}+ track{minTracks === 1 ? '' : 's'} required)</span></h3>
         <div className="grid gap-4 md:grid-cols-2">
           <Select
             label="Release Type"

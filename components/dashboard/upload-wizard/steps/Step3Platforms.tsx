@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import { Plus, X, Lock, Check } from 'lucide-react'
 import type { PlatformData } from '../types'
-import { DEFAULT_PLATFORMS, OPTIONAL_PLATFORMS } from '../types'
+import { OPTIONAL_PLATFORMS } from '../types'
 
 interface Step3PlatformsProps {
   platforms: PlatformData[]
@@ -57,7 +57,10 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
   }
 
   const defaultPlatforms = platforms.filter((p) => p.isDefault)
-  const customPlatforms = platforms.filter((p) => !p.isDefault)
+  const optionalPlatformIds = new Set(OPTIONAL_PLATFORMS.map((platform) => platform.id))
+  const customPlatforms = platforms.filter(
+    (platform) => !platform.isDefault && !optionalPlatformIds.has(platform.id)
+  )
 
   return (
     <div className="space-y-6 animate-fade-up">

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
-import { Save, Send, X, Clock, AlertCircle, CheckCircle, Loader2, RotateCcw } from 'lucide-react'
+import { Save, Send, X, AlertCircle, CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
 interface Step6ActionsProps {

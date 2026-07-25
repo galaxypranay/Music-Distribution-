@@ -30,7 +30,7 @@ interface UseUploadWizardOptions {
   artistId: string
   artistName: string
   existingRelease?: {
-    release: { id?: string; release_type: string; title: string; version?: string; featuring_artists?: string; original_release_date?: string; primary_genre?: string; secondary_genre?: string; language?: string; record_label?: string; cover_art_url?: string; release_date?: string }
+    release: { id?: string; release_type: string; title: string; version?: string; primary_artist_spotify_url?: string; featuring_artists?: string; featuring_artist_spotify_urls?: string; original_release_date?: string; primary_genre?: string; secondary_genre?: string; language?: string; record_label?: string; distribution_platforms?: string[]; cover_art_url?: string; release_date?: string }
     tracks: Array<{ id?: string; song_title: string; version?: string; audio_url?: string; isrc?: string; language?: string; explicit?: boolean; instrumental?: boolean; featuring_artists?: string; songwriter?: string; composer?: string; producer?: string; lyrics?: string }>
   }
   onSuccess?: (releaseId: string) => void
@@ -58,8 +58,8 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
         instrumental: t.instrumental || false,
         featuringArtists: t.featuring_artists,
         songwriters: t.songwriter ? [t.songwriter] : [],
-        composers: [],
-        producers: [],
+        composers: t.composer ? t.composer.split(',').map((name) => name.trim()).filter(Boolean) : [],
+        producers: t.producer ? t.producer.split(',').map((name) => name.trim()).filter(Boolean) : [],
         lyrics: t.lyrics,
         validationErrors: [],
       }))
@@ -90,9 +90,9 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
       title: existingRelease?.release?.title || '',
       version: existingRelease?.release?.version,
       primaryArtist: artistName,
-      primaryArtistSpotifyUrl: '',
+      primaryArtistSpotifyUrl: existingRelease?.release?.primary_artist_spotify_url || '',
       featuringArtists: existingRelease?.release?.featuring_artists || '',
-      featuringArtistSpotifyUrls: '',
+      featuringArtistSpotifyUrls: existingRelease?.release?.featuring_artist_spotify_urls || '',
       releaseDate: existingRelease?.release?.release_date || new Date().toISOString().split('T')[0],
       originalReleaseDate: existingRelease?.release?.original_release_date,
       primaryGenre: existingRelease?.release?.primary_genre || 'Pop',
@@ -107,8 +107,14 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
       validationError: null,
     },
     platforms: [
-      ...DEFAULT_PLATFORMS.map(p => ({ ...p, selected: true })),
-      ...ADDITIONAL_PLATFORMS.map(p => ({ ...p, selected: false })),
+      ...DEFAULT_PLATFORMS.map((platform) => ({ ...platform, selected: true })),
+      ...ADDITIONAL_PLATFORMS.map((platform) => ({
+        ...platform,
+        selected: existingRelease?.release?.distribution_platforms?.includes(platform.name) || false,
+      })),
+      ...(existingRelease?.release?.distribution_platforms || [])
+        .filter((name) => !DEFAULT_PLATFORMS.some((platform) => platform.name === name) && !ADDITIONAL_PLATFORMS.some((platform) => platform.name === name))
+        .map((name) => ({ id: `custom_${name.toLowerCase().replace(/\s+/g, '_')}`, name, isDefault: false, selected: true })),
     ],
     tracks: initialTracks,
     isSubmitting: false,
@@ -587,15 +593,30 @@ export function useUploadWizard({
         cover_art_url: coverArtUrl,
         release_date: state.releaseInfo.releaseDate,
         language: state.releaseInfo.language,
-        copyright: state.releaseInfo.recordLabel,
+        version: state.releaseInfo.version,
+        original_release_date: state.releaseInfo.originalReleaseDate,
+        primary_genre: state.releaseInfo.primaryGenre,
+        secondary_genre: state.releaseInfo.secondaryGenre,
+        record_label: state.releaseInfo.recordLabel,
+        primary_artist_spotify_url: state.releaseInfo.primaryArtistSpotifyUrl,
+        featuring_artists: state.releaseInfo.featuringArtists,
+        featuring_artist_spotify_urls: state.releaseInfo.featuringArtistSpotifyUrls,
+        distribution_platforms: state.platforms.filter((platform) => platform.selected).map((platform) => platform.name),
         status: 'Draft' as const,
         tracks: state.tracks.map((track, idx) => ({
           track_number: idx + 1,
           song_title: track.songTitle,
+          version: track.version,
           genre: state.releaseInfo.primaryGenre,
           audio_url: trackUrls[idx],
           explicit: track.explicit,
+          instrumental: track.instrumental,
+          isrc: track.isrc,
+          language: track.language,
+          featuring_artists: track.featuringArtists,
           songwriter: track.songwriters.join(', '),
+          composer: track.composers.join(', '),
+          producer: track.producers.join(', '),
           lyrics: track.lyrics,
         })),
       }
@@ -630,7 +651,7 @@ export function useUploadWizard({
       setState((prev) => ({ ...prev, isSubmitting: false }))
       throw new Error(message)
     }
-  }, [state, artistId])
+  }, [state, artistId, clearDraft])
 
   const submitRelease = useCallback(async (): Promise<boolean> => {
     // Run all validations first
@@ -643,7 +664,6 @@ export function useUploadWizard({
     })
 
     // Check if any errors
-    const hasErrors = Object.values(state.validationErrors).some((e) => e.length > 0)
     // Re-validate with current state
     const currentErrors: Record<number, string[]> = {}
     for (let s = 1; s <= 5; s++) {
@@ -712,6 +732,9 @@ export function useUploadWizard({
         featuring_artists: state.releaseInfo.featuringArtists,
         featuring_artist_spotify_urls: state.releaseInfo.featuringArtistSpotifyUrls,
         primary_artist_spotify_url: state.releaseInfo.primaryArtistSpotifyUrl,
+        distribution_platforms: state.platforms
+          .filter((platform) => platform.selected)
+          .map((platform) => platform.name),
         status: 'Pending Review' as const,
         tracks: state.tracks.map((track, idx) => ({
           track_number: idx + 1,

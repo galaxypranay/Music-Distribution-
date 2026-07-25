@@ -23,11 +23,9 @@ const STEP_LABELS = [
 
 export default function UploadWizard({
   mode = 'create',
-  existingReleaseId,
   onSuccess,
 }: {
   mode?: 'create' | 'edit'
-  existingReleaseId?: string
   onSuccess?: (releaseId: string) => void
 }) {
   const { artist } = useArtistSession()

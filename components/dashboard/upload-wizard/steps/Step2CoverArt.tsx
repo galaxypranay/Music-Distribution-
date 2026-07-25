@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
-import { Upload, X, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react'
 import { COVER_ART_REQUIREMENTS } from '../types'
 import type { CoverArtData } from '../types'
 
@@ -124,6 +124,8 @@ export default function Step2CoverArt({ data, onFileSelect, onRemove }: Step2Cov
         ) : (
           <>
             <div className="relative w-64 h-64 mx-auto">
+              {/* Preview comes from a local object URL before it is uploaded. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={data.previewUrl!}
                 alt="Cover art preview"

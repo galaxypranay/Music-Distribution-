@@ -14,7 +14,7 @@ import type {
 /**
  * Validate a single track's data
  */
-export function validateTrack(track: TrackData, index: number): string[] {
+export function validateTrack(track: TrackData): string[] {
   const errors: string[] = []
 
   if (!track.songTitle?.trim()) {
@@ -132,7 +132,7 @@ export function validateTracks(tracks: TrackData[], releaseType: ReleaseType): s
 
   // Validate each track
   tracks.forEach((track, i) => {
-    const trackErrors = validateTrack(track, i)
+    const trackErrors = validateTrack(track)
     if (trackErrors.length > 0) {
       errors.push(`Track ${i + 1}: ${trackErrors.join('; ')}`)
     }

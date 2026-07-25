@@ -1,8 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { CheckCircle, AlertCircle, AlertTriangle, Loader2 } from 'lucide-react'
-import { validateWizard } from '../utils'
+import { CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react'
 import type { WizardState } from '../types'
 
 interface Step5ValidationProps {
@@ -120,9 +119,6 @@ export default function Step5Validation({ state, onGoToStep }: Step5ValidationPr
   }))
 
   const allPassed = results.every(r => r.passed)
-  const currentStepErrors = validateWizard(state)
-  const hasBlockingErrors = Object.values(currentStepErrors).some(e => e.length > 0)
-
   return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex items-center justify-between">
@@ -151,7 +147,7 @@ export default function Step5Validation({ state, onGoToStep }: Step5ValidationPr
       </div>
 
       <div className="space-y-3" role="list" aria-label="Validation checks">
-        {results.map((result, i) => (
+        {results.map((result) => (
           <div
             key={result.id}
             className={cn(
@@ -235,13 +231,4 @@ export default function Step5Validation({ state, onGoToStep }: Step5ValidationPr
       </div>
     </div>
   )
-}
-
-function formatDateTime(ts: number): string {
-  return new Date(ts).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
 }

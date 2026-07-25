@@ -19,7 +19,7 @@ interface UseFileUploadOptions {
 /**
  * Hook for uploading files to Supabase Storage with progress tracking
  */
-export function useFileUpload({ bucket, onProgress }: UseFileUploadOptions) {
+export function useFileUpload({ bucket }: UseFileUploadOptions) {
   const [result, setResult] = useState<UploadResult>({
     url: null,
     progress: 0,
@@ -45,7 +45,7 @@ export function useFileUpload({ bucket, onProgress }: UseFileUploadOptions) {
         const path = `${baseName}-${timestamp}.${extension}`
 
         // Upload with progress
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from(bucket)
           .upload(path, file, {
             cacheControl: '3600',
@@ -88,7 +88,7 @@ export function useFileUpload({ bucket, onProgress }: UseFileUploadOptions) {
 /**
  * Hook for uploading multiple files sequentially with overall progress
  */
-export function useMultiFileUpload({ bucket, onProgress }: UseFileUploadOptions) {
+export function useMultiFileUpload({ bucket }: UseFileUploadOptions) {
   const [files, setFiles] = useState<File[]>([])
   const [results, setResults] = useState<Array<{ file: File; url: string | null; error: string | null }>>([])
   const [overallProgress, setOverallProgress] = useState(0)
@@ -111,7 +111,7 @@ export function useMultiFileUpload({ bucket, onProgress }: UseFileUploadOptions)
           const timestamp = Date.now()
           const path = `${baseName}-${timestamp}.${extension}`
 
-          const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+          const { error } = await supabase.storage.from(bucket).upload(path, file, {
             cacheControl: '3600',
             upsert: false,
           })

@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Input, Select, Textarea } from '@/components/ui/Field'
 import Button from '@/components/ui/Button'
-import { UploadCloud, Music, Trash2, ChevronUp, ChevronDown, Check, X, Loader2 } from 'lucide-react'
-import { formatDuration, validateTrack, createEmptyTrack, resequenceTracks } from '../utils'
-import { LANGUAGES, MIN_TRACKS_BY_TYPE, MAX_TRACKS_BY_TYPE, ISRC_REGEX, GENRES } from '../types'
+import { UploadCloud, Music, Trash2, ChevronUp, ChevronDown, Check, X } from 'lucide-react'
+import { formatDuration } from '../utils'
+import { LANGUAGES, MIN_TRACKS_BY_TYPE, MAX_TRACKS_BY_TYPE } from '../types'
 import type { TrackData } from '../types'
 
 interface Step4TracksProps {
@@ -37,28 +37,6 @@ export default function Step4Tracks({
   const [expandedTrack, setExpandedTrack] = useState<string | null>(tracks[0]?.key || null)
   const handleFileUpload = async (trackKey: string, file: File) => {
     onUploadAudio(trackKey, file)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.currentTarget.classList.add('border-cobalt', 'bg-cobalt/5')
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove('border-cobalt', 'bg-cobalt/5')
-  }
-
-  const handleDrop = (e: React.DragEvent, trackKey: string) => {
-    e.preventDefault()
-    e.currentTarget.classList.remove('border-cobalt', 'bg-cobalt/5')
-    const file = e.dataTransfer.files[0]
-    if (file) handleFileUpload(trackKey, file)
-  }
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, trackKey: string) => {
-    const file = e.target.files?.[0]
-    if (file) handleFileUpload(trackKey, file)
-    e.target.value = ''
   }
 
   return (
@@ -175,8 +153,6 @@ function TrackCard({
   const [lyrics, setLyrics] = useState(track.lyrics || '')
   const [isDragging, setIsDragging] = useState(false)
 
-  // Sync with props
-  const trackErrors = validateTrack(track, index)
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault()
     setIsDragging(true)
