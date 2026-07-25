@@ -65,7 +65,7 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
         <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-ink-soft">
           Available in India
         </h4>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {indiaPlatforms.map((platform) => (
             <button
               key={platform.id}
@@ -73,15 +73,15 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
               onClick={() => handleToggle(platform.id)}
               aria-pressed={platform.selected}
               className={cn(
-                'brutal-press group flex items-center gap-3 rounded-lg border-[2.5px] p-4 text-left transition-all',
+                'brutal-press group flex min-h-20 items-center gap-3 rounded-lg border-[2.5px] p-3 text-left transition-all',
                 platform.selected
-                  ? 'border-lime bg-lime/15 shadow-[3px_3px_0_0_var(--color-lime-deep)]'
-                  : 'border-ink/20 bg-white shadow-[3px_3px_0_0_var(--color-ink)] hover:border-canary hover:bg-canary/10'
+                  ? 'border-ink bg-canary shadow-[3px_3px_0_0_var(--color-ink)]'
+                  : 'border-ink bg-white hover:-translate-y-0.5 hover:border-cobalt hover:shadow-[3px_3px_0_0_var(--color-ink)]'
               )}
             >
               <span className={cn(
                 'flex h-5 w-5 shrink-0 items-center justify-center rounded border-2',
-                platform.selected ? 'border-ink bg-lime text-ink' : 'border-ink/40 bg-white text-transparent'
+                platform.selected ? 'border-ink bg-ink text-canary' : 'border-ink/40 bg-paper text-transparent'
               )}>
                 <Check className="h-3.5 w-3.5" />
               </span>
@@ -89,7 +89,7 @@ export default function Step3Platforms({ platforms, onPlatformsChange }: Step3Pl
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-body font-medium text-ink">{platform.name}</span>
                 <span className="mt-0.5 block font-mono text-[10px] text-ink-faint">
-                  {platform.selected ? 'Selected — click to remove' : 'Click to add'}
+                  {platform.selected ? 'Selected' : 'Click to add'}
                 </span>
               </span>
             </button>
