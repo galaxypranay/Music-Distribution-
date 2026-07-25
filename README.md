@@ -21,6 +21,9 @@ is for brand-new databases only):
 2. `supabase/migration-profile-uid-scheduled-delete.sql` — artist UID, social
    links, and the scheduled-deletion columns on releases.
 3. `supabase/migration-draft-status.sql` — allows 'Draft' as a release status.
+4. `supabase/migration-upload-release-metadata.sql` — stores the complete
+   six-step upload workflow metadata (release credits, platforms, and track
+   credits) used by the Upload Release page.
 
 Each script is safe to run on a database with real data already in it.
 
