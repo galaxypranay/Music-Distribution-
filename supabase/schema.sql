@@ -157,7 +157,7 @@ create table if not exists public.app_settings (
   maintenance_mode       boolean not null default false,
   max_upload_mb          integer not null default 50,
   allowed_image_formats  text[] not null default array['jpg','jpeg','png','webp'],
-  allowed_audio_formats  text[] not null default array['mp3','wav','flac','aac','ogg'],
+  allowed_audio_formats  text[] not null default array['wav'],
   updated_at             timestamptz not null default now()
 );
 
