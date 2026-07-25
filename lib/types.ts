@@ -64,6 +64,7 @@ export interface Track {
   version: string | null
   genre: string | null
   audio_url: string
+  duration: number | null
   explicit: boolean
   instrumental: boolean
   isrc: string | null
