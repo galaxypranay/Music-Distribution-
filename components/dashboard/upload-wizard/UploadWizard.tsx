@@ -101,6 +101,7 @@ export default function UploadWizard({
             onUpdateTrack={updateTrack}
             onUploadAudio={handleTrackAudioFile}
             onRemoveAudio={removeTrackAudio}
+            maxAudioUploadMb={state.audioMaxUploadMb}
             errors={state.validationErrors[4] || []}
           />
         )

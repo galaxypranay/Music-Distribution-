@@ -122,6 +122,7 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
     tracks: initialTracks,
     isSubmitting: false,
     uploadProgress: null,
+    audioMaxUploadMb: 50,
     validationErrors: {},
     draftId: null,
     lastSaved: null,
@@ -203,10 +204,24 @@ export function useUploadWizard({
     }
   }, [loadDraft, mode, existingRelease])
 
+  // The artist-facing upload limit always follows the value configured in
+  // Admin Settings. A 50 MB fallback keeps the form usable if settings are
+  // temporarily unavailable.
+  useEffect(() => {
+    fetch('/api/settings', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((settings) => {
+        if (typeof settings?.max_upload_mb === 'number' && settings.max_upload_mb > 0) {
+          setState((prev) => ({ ...prev, audioMaxUploadMb: settings.max_upload_mb }))
+        }
+      })
+      .catch(() => undefined)
+  }, [])
+
   const restoreDraft = useCallback(() => {
     const draft = loadDraft()
     if (draft) {
-      setState(draft)
+      setState({ ...draft, audioMaxUploadMb: draft.audioMaxUploadMb || 50 })
       setShowRestoreToast(false)
     }
   }, [loadDraft])
@@ -512,9 +527,16 @@ export function useUploadWizard({
 
   const handleTrackAudioFile = useCallback(
     async (trackKey: string, file: File) => {
-      // Validate file type
-      if (!(AUDIO_ALLOWED_TYPES as readonly string[]).includes(file.type)) {
-        updateTrack(trackKey, { validationErrors: ['File must be MP3, WAV, FLAC, AAC, or OGG'] })
+      const isWav = file.name.toLowerCase().endsWith('.wav') &&
+        (!file.type || (AUDIO_ALLOWED_TYPES as readonly string[]).includes(file.type))
+      if (!isWav) {
+        updateTrack(trackKey, { validationErrors: ['Audio must be a WAV (.wav) file'] })
+        return
+      }
+
+      const maxBytes = state.audioMaxUploadMb * 1024 * 1024
+      if (file.size > maxBytes) {
+        updateTrack(trackKey, { validationErrors: [`WAV file must be ${state.audioMaxUploadMb} MB or smaller`] })
         return
       }
 
@@ -542,7 +564,7 @@ export function useUploadWizard({
         validationErrors: [],
       })
     },
-    [updateTrack]
+    [state.audioMaxUploadMb, updateTrack]
   )
 
   const removeTrackAudio = useCallback(

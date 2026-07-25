@@ -63,6 +63,8 @@ export interface WizardState {
   tracks: TrackData[]
   isSubmitting: boolean
   uploadProgress: { step: string; loaded: number; total: number } | null
+  /** Live value from Admin Settings; defaults to 50 until settings load. */
+  audioMaxUploadMb: number
   validationErrors: Record<number, string[]>
   draftId: string | null
   lastSaved: number | null
@@ -175,6 +177,6 @@ export const COVER_ART_REQUIREMENTS = {
 export const DRAFT_STORAGE_PREFIX = 'spilrix-upload-draft:'
 export const DRAFT_VERSION = 1 as const
 
-export const AUDIO_ALLOWED_TYPES = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/ogg'] as const
+export const AUDIO_ALLOWED_TYPES = ['audio/wav', 'audio/x-wav', 'audio/wave'] as const
 
 export const ISRC_REGEX = /^[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}$/
