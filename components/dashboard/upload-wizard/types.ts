@@ -101,6 +101,7 @@ export const OPTIONAL_PLATFORMS: Omit<PlatformData, 'selected'>[] = [
   { id: 'instagram_facebook', name: 'Instagram / Facebook', isDefault: false },
   { id: 'jiosaavn', name: 'JioSaavn', isDefault: false },
   { id: 'gaana', name: 'Gaana', isDefault: false },
+  { id: 'hungama', name: 'Hungama Music', isDefault: false },
 ]
 
 export const ADDITIONAL_PLATFORMS = OPTIONAL_PLATFORMS
