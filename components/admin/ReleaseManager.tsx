@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Check,
   Download,
@@ -270,6 +270,8 @@ export default function ReleaseManager({
                   </p>
                 ) : null}
 
+                <ReleaseMetadata release={release} />
+
                 <ul className="mt-3 flex flex-col gap-2">
                   {release.tracks.map((track) => (
                     <li key={track.id} className="text-sm">
@@ -295,6 +297,7 @@ export default function ReleaseManager({
                           </p>
                         </details>
                       ) : null}
+                      <TrackMetadata track={track} />
                     </li>
                   ))}
                 </ul>
@@ -559,6 +562,114 @@ export default function ReleaseManager({
       })}
     </div>
   )
+}
+
+function ReleaseMetadata({ release }: { release: ReleaseWithTracks }) {
+  const featuringArtists = (release.featuring_artists || '')
+    .split(',')
+    .map((artist) => artist.trim())
+    .filter(Boolean)
+  const featuringUrls = (release.featuring_artist_spotify_urls || '')
+    .split(/\r?\n/)
+    .map((url) => url.trim())
+    .filter(Boolean)
+  const features = Array.from({ length: Math.max(featuringArtists.length, featuringUrls.length) }, (_, index) => ({
+    artist: featuringArtists[index],
+    url: featuringUrls[index],
+  }))
+  const genre = [release.primary_genre, release.secondary_genre].filter(Boolean).join(' / ')
+  const hasMetadata = Boolean(
+    release.version || release.original_release_date || genre || release.record_label ||
+    release.primary_artist_spotify_url || release.distribution_platforms?.length || features.length
+  )
+
+  if (!hasMetadata) return null
+
+  return (
+    <details className="mt-3 rounded-md border-2 border-ink bg-paper">
+      <summary className="cursor-pointer px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+        Submission details
+      </summary>
+      <dl className="grid gap-x-5 gap-y-3 border-t-2 border-ink p-3 text-sm sm:grid-cols-2">
+        <MetadataItem label="Release version">{release.version}</MetadataItem>
+        <MetadataItem label="Original release date">
+          {release.original_release_date ? formatDate(release.original_release_date) : null}
+        </MetadataItem>
+        <MetadataItem label="Genres">{genre || null}</MetadataItem>
+        <MetadataItem label="Record label">{release.record_label}</MetadataItem>
+        <MetadataItem label="Distribution platforms">
+          {release.distribution_platforms?.join(', ') || null}
+        </MetadataItem>
+        <MetadataItem label="Primary artist Spotify">
+          {release.primary_artist_spotify_url ? <ExternalLink href={release.primary_artist_spotify_url} /> : null}
+        </MetadataItem>
+        {features.length > 0 ? (
+          <div className="sm:col-span-2">
+            <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-ink-faint">Featuring artists</dt>
+            <dd className="mt-1 flex flex-wrap gap-2 text-ink">
+              {features.map((feature, index) => (
+                <span key={`${feature.artist}-${feature.url}-${index}`} className="rounded border-2 border-ink bg-white px-2 py-1 text-xs font-semibold">
+                  {feature.artist || 'Unnamed artist'}
+                  {feature.url ? <> · <ExternalLink href={feature.url} /></> : null}
+                </span>
+              ))}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+    </details>
+  )
+}
+
+function TrackMetadata({ track }: { track: ReleaseWithTracks['tracks'][number] }) {
+  const credits = [
+    ['Version', track.version],
+    ['Duration', track.duration !== null ? formatDuration(track.duration) : null],
+    ['ISRC', track.isrc],
+    ['Language', track.language],
+    ['Featuring artists', track.featuring_artists],
+    ['Songwriter(s)', track.songwriter],
+    ['Composer(s)', track.composer],
+    ['Producer(s)', track.producer],
+  ] as const
+  const hasDetails = track.instrumental || credits.some(([, value]) => Boolean(value))
+
+  if (!hasDetails) return null
+
+  return (
+    <details className="mt-2 rounded-md border-2 border-ink/20 bg-paper px-3 py-2">
+      <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint">
+        Track details
+      </summary>
+      <dl className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+        {credits.map(([label, value]) => <MetadataItem key={label} label={label}>{value}</MetadataItem>)}
+        {track.instrumental ? <MetadataItem label="Instrumental">Yes</MetadataItem> : null}
+      </dl>
+    </details>
+  )
+}
+
+function MetadataItem({ label, children }: { label: string; children: ReactNode }) {
+  if (!children) return null
+  return (
+    <div>
+      <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-ink-faint">{label}</dt>
+      <dd className="mt-0.5 break-words font-medium text-ink">{children}</dd>
+    </div>
+  )
+}
+
+function ExternalLink({ href }: { href: string }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="text-cobalt underline underline-offset-2 hover:text-cobalt-deep">
+      Open profile
+    </a>
+  )
+}
+
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`
 }
 
 function ActionPill({
