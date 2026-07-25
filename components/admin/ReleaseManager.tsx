@@ -175,6 +175,8 @@ export default function ReleaseManager({
         zip.file(`${track.track_number} - ${track.song_title}.${extension}`, blob)
       }
 
+      zip.file('release-details.txt', buildReleaseDetails(release))
+
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const url = URL.createObjectURL(zipBlob)
       const link = document.createElement('a')
@@ -624,7 +626,7 @@ function ReleaseMetadata({ release }: { release: ReleaseWithTracks }) {
 function TrackMetadata({ track }: { track: ReleaseWithTracks['tracks'][number] }) {
   const credits = [
     ['Version', track.version],
-    ['Duration', track.duration !== null ? formatDuration(track.duration) : null],
+    ['Duration', typeof track.duration === 'number' ? formatDuration(track.duration) : null],
     ['ISRC', track.isrc],
     ['Language', track.language],
     ['Featuring artists', track.featuring_artists],
@@ -670,6 +672,68 @@ function ExternalLink({ href }: { href: string }) {
 function formatDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60)
   return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`
+}
+
+function buildReleaseDetails(release: ReleaseWithTracks) {
+  const featuringArtists = (release.featuring_artists || '')
+    .split(',')
+    .map((artist) => artist.trim())
+    .filter(Boolean)
+  const featuringUrls = (release.featuring_artist_spotify_urls || '')
+    .split(/\r?\n/)
+    .map((url) => url.trim())
+    .filter(Boolean)
+  const releaseFeatures = Array.from(
+    { length: Math.max(featuringArtists.length, featuringUrls.length) },
+    (_, index) => `${featuringArtists[index] || 'Unnamed artist'}${featuringUrls[index] ? ` — ${featuringUrls[index]}` : ''}`
+  )
+  const value = (item: string | number | null | undefined) => item === null || item === undefined || item === '' ? 'Not provided' : String(item)
+  const lines = [
+    'SPILRIX DISTRIBUTION — RELEASE DETAILS',
+    '=======================================',
+    '',
+    'RELEASE',
+    `Title: ${release.title}`,
+    `Version: ${value(release.version)}`,
+    `Release type: ${release.release_type}`,
+    `Status: ${release.status}`,
+    `Primary artist: ${release.artist_name}`,
+    `Primary artist Spotify: ${value(release.primary_artist_spotify_url)}`,
+    `Featuring artist(s): ${releaseFeatures.length ? releaseFeatures.join('; ') : 'None'}`,
+    `Release date: ${value(release.release_date)}`,
+    `Original release date: ${value(release.original_release_date)}`,
+    `Primary genre: ${value(release.primary_genre)}`,
+    `Secondary genre: ${value(release.secondary_genre)}`,
+    `Language: ${value(release.language)}`,
+    `Record label: ${value(release.record_label)}`,
+    `Distribution platforms: ${release.distribution_platforms?.length ? release.distribution_platforms.join(', ') : 'Not provided'}`,
+    `Cover art URL: ${value(release.cover_art_url)}`,
+    `Copyright: ${value(release.copyright)}`,
+    '',
+    'TRACKS',
+    '------',
+    ...release.tracks.flatMap((track) => [
+      '',
+      `Track ${track.track_number}: ${track.song_title}`,
+      `Version: ${value(track.version)}`,
+      `Genre: ${value(track.genre)}`,
+      `Audio file URL: ${value(track.audio_url)}`,
+      `Duration: ${typeof track.duration === 'number' ? formatDuration(track.duration) : 'Not provided'}`,
+      `ISRC: ${value(track.isrc)}`,
+      `Language: ${value(track.language)}`,
+      `Explicit content: ${track.explicit ? 'Yes' : 'No'}`,
+      `Instrumental: ${track.instrumental ? 'Yes' : 'No'}`,
+      `Featuring artist(s): ${value(track.featuring_artists)}`,
+      `Songwriter(s): ${value(track.songwriter)}`,
+      `Composer(s): ${value(track.composer)}`,
+      `Producer(s): ${value(track.producer)}`,
+      `Lyrics: ${track.lyrics ? `\n${track.lyrics}` : 'Not provided'}`,
+    ]),
+    '',
+    `Exported from Spilrix on ${new Date().toLocaleString()}`,
+  ]
+
+  return lines.join('\n')
 }
 
 function ActionPill({
