@@ -31,7 +31,7 @@ interface UseUploadWizardOptions {
   artistName: string
   existingRelease?: {
     release: { id?: string; release_type: string; title: string; version?: string; primary_artist_spotify_url?: string; featuring_artists?: string; featuring_artist_spotify_urls?: string; original_release_date?: string; primary_genre?: string; secondary_genre?: string; language?: string; record_label?: string; distribution_platforms?: string[]; cover_art_url?: string; release_date?: string }
-    tracks: Array<{ id?: string; song_title: string; version?: string; audio_url?: string; isrc?: string; language?: string; explicit?: boolean; instrumental?: boolean; featuring_artists?: string; songwriter?: string; composer?: string; producer?: string; lyrics?: string }>
+    tracks: Array<{ id?: string; song_title: string; version?: string; audio_url?: string; duration?: number | null; isrc?: string; language?: string; explicit?: boolean; instrumental?: boolean; featuring_artists?: string; songwriter?: string; composer?: string; producer?: string; lyrics?: string }>
   }
   onSuccess?: (releaseId: string) => void
 }
@@ -51,7 +51,7 @@ function createInitialState(mode: 'create' | 'edit', artistId: string, artistNam
         version: t.version,
         audioFile: null,
         audioPreviewUrl: t.audio_url || null,
-        duration: null,
+        duration: t.duration ?? null,
         isrc: t.isrc,
         language: t.language || 'English',
         explicit: t.explicit || false,
@@ -609,6 +609,7 @@ export function useUploadWizard({
           version: track.version,
           genre: state.releaseInfo.primaryGenre,
           audio_url: trackUrls[idx],
+          duration: track.duration,
           explicit: track.explicit,
           instrumental: track.instrumental,
           isrc: track.isrc,
@@ -742,6 +743,7 @@ export function useUploadWizard({
           version: track.version,
           genre: state.releaseInfo.primaryGenre,
           audio_url: trackUrls[idx],
+          duration: track.duration,
           explicit: track.explicit,
           instrumental: track.instrumental,
           isrc: track.isrc,
