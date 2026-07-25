@@ -5,7 +5,7 @@ const DEFAULTS: AppSettings = {
   maintenance_mode: false,
   max_upload_mb: 50,
   allowed_image_formats: ['jpg', 'jpeg', 'png', 'webp'],
-  allowed_audio_formats: ['mp3', 'wav', 'flac', 'aac', 'ogg'],
+  allowed_audio_formats: ['wav'],
 }
 
 export async function getAppSettings(supabase: SupabaseClient): Promise<AppSettings> {
