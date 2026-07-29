@@ -18,7 +18,8 @@ interface Step4TracksProps {
   onUpdateTrack: (key: string, patch: Partial<TrackData>) => void
   onUploadAudio: (trackKey: string, file: File) => void
   onRemoveAudio: (trackKey: string) => void
-  maxAudioUploadMb: number
+  /** Optional so the legacy nested wizard remains compatible. */
+  maxAudioUploadMb?: number
   errors: string[]
 }
 
@@ -31,7 +32,7 @@ export default function Step4Tracks({
   onUpdateTrack,
   onUploadAudio,
   onRemoveAudio,
-  maxAudioUploadMb,
+  maxAudioUploadMb = 500,
   errors,
 }: Step4TracksProps) {
   const minTracks = MIN_TRACKS_BY_TYPE[releaseType as keyof typeof MIN_TRACKS_BY_TYPE] || 1
@@ -263,7 +264,7 @@ function TrackCard({
             >
               <input
                 type="file"
-                accept=".wav,audio/wav,audio/x-wav"
+                accept="audio/mpeg,audio/wav,audio/flac,audio/aac,audio/ogg"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => handleFileSelect(e, track.key)}
                 disabled={isUploading}
@@ -301,7 +302,7 @@ function TrackCard({
                   <UploadCloud className="mx-auto h-10 w-10 text-ink-faint mb-2" />
                   <p className="font-medium text-ink">Drag & drop or click to upload</p>
                   <p className="font-mono text-[10px] text-ink-faint mt-1">
-                    WAV only • Max {maxAudioUploadMb} MB
+                    MP3, WAV, FLAC, AAC, OGG • Max 500MB
                   </p>
                 </div>
               )}
