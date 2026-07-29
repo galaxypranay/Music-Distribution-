@@ -177,9 +177,17 @@ export default function AdminPage() {
     }
 
     loadAdminData()
+    // Live-sync artist access, tickets, replies and release status. This is
+    // intentionally client polling because the database tables are protected
+    // by RLS and cannot be subscribed to directly by browser clients.
+    const refreshInterval = window.setInterval(loadAdminData, 5000)
+    const onFocus = () => { void loadAdminData() }
+    window.addEventListener('focus', onFocus)
 
     return () => {
       isMounted = false
+      window.clearInterval(refreshInterval)
+      window.removeEventListener('focus', onFocus)
     }
   }, [passcode])
 
