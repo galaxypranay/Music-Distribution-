@@ -18,6 +18,8 @@ interface Step4TracksProps {
   onUpdateTrack: (key: string, patch: Partial<TrackData>) => void
   onUploadAudio: (trackKey: string, file: File) => void
   onRemoveAudio: (trackKey: string) => void
+  /** Optional so the legacy nested wizard remains compatible. */
+  maxAudioUploadMb?: number
   errors: string[]
 }
 
@@ -30,6 +32,7 @@ export default function Step4Tracks({
   onUpdateTrack,
   onUploadAudio,
   onRemoveAudio,
+  maxAudioUploadMb = 500,
   errors,
 }: Step4TracksProps) {
   const minTracks = MIN_TRACKS_BY_TYPE[releaseType as keyof typeof MIN_TRACKS_BY_TYPE] || 1
@@ -85,6 +88,7 @@ export default function Step4Tracks({
             onMoveDown={() => index < tracks.length - 1 && onReorderTracks(index, index + 1)}
             onUploadAudio={handleFileUpload}
             onRemoveAudio={onRemoveAudio}
+            maxAudioUploadMb={maxAudioUploadMb}
             isUploading={false}
             uploadProgress={0}
             uploadError={null}
@@ -116,6 +120,7 @@ interface TrackCardProps {
   onMoveDown: () => void
   onUploadAudio: (trackKey: string, file: File) => void
   onRemoveAudio: (trackKey: string) => void
+  maxAudioUploadMb: number
   isUploading: boolean
   uploadProgress: number
   uploadError: string | null
@@ -134,6 +139,7 @@ function TrackCard({
   onMoveDown,
   onUploadAudio,
   onRemoveAudio,
+  maxAudioUploadMb,
   isUploading,
   uploadProgress,
   uploadError,
