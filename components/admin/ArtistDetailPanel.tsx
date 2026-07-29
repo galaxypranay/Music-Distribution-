@@ -8,6 +8,7 @@ import type { ArtistReleaseCounts, ArtistTicketCounts } from '@/components/admin
 import Card from '@/components/ui/Card'
 import ReleaseManager from '@/components/admin/ReleaseManager'
 import TicketsList from '@/components/admin/TicketsList'
+import UploadAccessPanel from '@/components/admin/UploadAccessPanel'
 
 interface ArtistDetailPanelProps {
   artist: Artist
@@ -93,6 +94,7 @@ export default function ArtistDetailPanel({
       </div>
 
       <div className="space-y-8 p-4 md:p-6">
+        <UploadAccessPanel artistId={artist.id} passcode={passcode} />
         <div>
           <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
             Releases

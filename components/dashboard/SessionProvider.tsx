@@ -11,12 +11,15 @@ import {
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { clearSession, type ArtistSession } from '@/lib/session'
+import type { UploadAccessState } from '@/lib/types'
 
 interface SessionContextValue {
   artist: ArtistSession
   signOut: () => void
   /** Lets the profile panel push name/photo edits into the live session. */
   updateArtist: (patch: Partial<ArtistSession>) => void
+  uploadAccess: UploadAccessState | null
+  refreshUploadAccess: () => Promise<void>
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
@@ -31,6 +34,13 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
   const router = useRouter()
   // undefined = still resolving · null = redirecting away · object = ready
   const [artist, setArtist] = useState<ArtistSession | null | undefined>(undefined)
+  const [uploadAccess, setUploadAccess] = useState<UploadAccessState | null>(null)
+
+  const refreshUploadAccess = useCallback(async () => {
+    if (!artist?.id) return
+    const response = await fetch(`/api/artist-access?artist_id=${artist.id}`)
+    if (response.ok) setUploadAccess(await response.json())
+  }, [artist?.id])
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -109,7 +119,7 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
         return
       }
 
-      setArtist({ id: profile.id, name: profile.name, photo_url: profile.photo_url })
+      setArtist({ id: profile.id, name: profile.name, photo_url: profile.photo_url, display_id: profile.display_id })
     }
 
     resolve()
@@ -128,6 +138,8 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
       subscription.unsubscribe()
     }
   }, [router])
+
+  useEffect(() => { void refreshUploadAccess() }, [refreshUploadAccess])
 
   const signOut = useCallback(() => {
     const supabase = getSupabaseBrowserClient()
@@ -150,7 +162,7 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
   }
 
   return (
-    <SessionContext.Provider value={{ artist, signOut, updateArtist }}>
+    <SessionContext.Provider value={{ artist, signOut, updateArtist, uploadAccess, refreshUploadAccess }}>
       {children}
     </SessionContext.Provider>
   )

@@ -13,6 +13,7 @@ import {
   UploadCloud,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useArtistSession } from '@/components/dashboard/SessionProvider'
 
 const NAV_TABS = [
   { href: '/dashboard', label: 'Home', icon: Home },
@@ -30,11 +31,13 @@ const COMING_SOON_TABS = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { uploadAccess } = useArtistSession()
 
   return (
     <aside className="hidden w-60 flex-col gap-3 border-r-[3px] border-ink px-4 py-8 md:flex">
       {NAV_TABS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href
+        const locked = label === 'Upload' && !uploadAccess?.active
 
         return (
           <Link
@@ -47,7 +50,7 @@ export default function Sidebar() {
                 : 'border-transparent text-ink-soft hover:border-ink hover:bg-white hover:shadow-[3px_3px_0_0_var(--color-ink)]'
             )}
           >
-            <Icon className="h-4 w-4" />
+            {locked ? <Lock className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
             {label}
           </Link>
         )

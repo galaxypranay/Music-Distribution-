@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Home, LifeBuoy, Settings, TrendingUp, UploadCloud } from 'lucide-react'
+import { BarChart3, Home, LifeBuoy, Lock, Settings, TrendingUp, UploadCloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useArtistSession } from '@/components/dashboard/SessionProvider'
 
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: Home },
@@ -16,11 +17,13 @@ const TABS = [
 
 export default function MobileTabs() {
   const pathname = usePathname()
+  const { uploadAccess } = useArtistSession()
 
   return (
     <nav className="flex border-b-[3px] border-ink md:hidden">
       {TABS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href
+        const locked = label === 'Upload' && !uploadAccess?.active
 
         return (
           <Link
@@ -31,7 +34,7 @@ export default function MobileTabs() {
               isActive ? 'bg-canary text-ink' : 'bg-paper text-ink-soft'
             )}
           >
-            <Icon className="h-4 w-4" />
+            {locked ? <Lock className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
             {label}
           </Link>
         )
