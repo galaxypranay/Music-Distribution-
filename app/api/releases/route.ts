@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { processScheduledDeletions } from '@/lib/process-scheduled-deletions'
 import { logActivity } from '@/lib/log-activity'
 import { requireArtist } from '@/lib/api-auth'
+import { getArtistAccessState } from '@/lib/artist-access'
 import type { ReleaseType } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -70,6 +71,13 @@ export async function POST(request: Request) {
 
   const auth = await requireArtist(request, artist_id)
   if ('response' in auth) return auth.response
+
+  // Server-side entitlement check: a hidden/disabled button must never be the
+  // only protection for release uploads.
+  const entitlement = await getArtistAccessState(getSupabaseAdminClient(), auth.artist.id)
+  if (!entitlement.active) {
+    return NextResponse.json({ error: entitlement.expired ? 'Subscription Expired. Please contact support to renew.' : 'Upload access is locked.' }, { status: 403 })
+  }
 
   if (!releaseType || !VALID_RELEASE_TYPES.includes(releaseType)) {
     return NextResponse.json(

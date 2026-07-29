@@ -4,6 +4,7 @@ import { parseStoragePathFromPublicUrl } from '@/lib/supabase/storage-path'
 import { logActivity } from '@/lib/log-activity'
 import type { ReleaseType, Track } from '@/lib/types'
 import { requireArtist } from '@/lib/api-auth'
+import { getArtistAccessState } from '@/lib/artist-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,6 +130,18 @@ export async function PATCH(
         : existing.status === 'Rejected' || existing.status === 'Needs Changes'
           ? 'Pending Review'
           : existing.status
+
+    // Resubmission can also happen through the edit endpoint, so it must use
+    // the same entitlement gate as the dedicated submit endpoint.
+    if (nextStatus === 'Pending Review' && existing.status !== 'Pending Review') {
+      const entitlement = await getArtistAccessState(supabase, auth.artist.id)
+      if (!entitlement.active) {
+        return NextResponse.json(
+          { error: entitlement.expired ? 'Subscription Expired. Please contact support to renew.' : 'Upload access is locked.' },
+          { status: 403 }
+        )
+      }
+    }
 
     // The status-page editor is intentionally smaller than the upload wizard.
     // Preserve wizard-only metadata unless this request explicitly supplies it.

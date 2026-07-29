@@ -7,6 +7,7 @@ import { useArtistSession } from '@/components/dashboard/SessionProvider'
 import type { ReleaseWithTracks } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { UploadAccessSummary } from '@/components/dashboard/UploadAccessCard'
 
 export default function HomePage() {
   const { artist } = useArtistSession()
@@ -61,6 +62,7 @@ export default function HomePage() {
             <StatCard label="Live" value={live} fill="bg-lime" />
             <StatCard label="Rejected" value={rejected} fill="bg-punch text-white" />
           </div>
+          <UploadAccessSummary />
 
           {total === 0 ? (
             <Card className="mt-6 px-6 py-12 text-center">

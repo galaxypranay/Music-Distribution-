@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/log-activity'
 import { requireArtist } from '@/lib/api-auth'
+import { getArtistAccessState } from '@/lib/artist-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +28,10 @@ export async function POST(
 
   try {
     const supabase = getSupabaseAdminClient()
+    const entitlement = await getArtistAccessState(supabase, auth.artist.id)
+    if (!entitlement.active) {
+      return NextResponse.json({ error: entitlement.expired ? 'Subscription Expired. Please contact support to renew.' : 'Upload access is locked.' }, { status: 403 })
+    }
 
     const { data: existing, error: fetchError } = await supabase
       .from('releases')
