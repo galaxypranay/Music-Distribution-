@@ -16,8 +16,7 @@ export default function HomePage() {
 
   useEffect(() => {
     let isMounted = true
-
-    fetch(`/api/releases?artist_id=${artist.id}`)
+    const refreshReleases = () => fetch(`/api/releases?artist_id=${artist.id}`)
       .then((res) => res.json())
       .then((result) => {
         if (isMounted) setReleases(result.releases ?? [])
@@ -25,10 +24,11 @@ export default function HomePage() {
       .finally(() => {
         if (isMounted) setIsLoading(false)
       })
-
-    return () => {
-      isMounted = false
-    }
+    void refreshReleases()
+    const refreshInterval = window.setInterval(() => void refreshReleases(), 5000)
+    const onFocus = () => void refreshReleases()
+    window.addEventListener('focus', onFocus)
+    return () => { isMounted = false; window.clearInterval(refreshInterval); window.removeEventListener('focus', onFocus) }
   }, [artist.id])
 
   const total = releases.length

@@ -22,12 +22,23 @@ export default function SupportPage() {
 
   useEffect(() => {
     let isMounted = true
-    fetch(`/api/tickets?artist_id=${artist.id}`)
+    const loadTickets = () => fetch(`/api/tickets?artist_id=${artist.id}`)
       .then((r) => r.json())
-      .then((d) => { if (isMounted) setTickets(d.tickets ?? []) })
+      .then((d) => {
+        if (!isMounted) return
+        const nextTickets = d.tickets ?? []
+        setTickets(nextTickets)
+        // Keep an opened conversation fresh when an admin replies.
+        setSelectedTicket((current) => current ? nextTickets.find((ticket: TicketWithMessages) => ticket.id === current.id) ?? current : null)
+        setError(null)
+      })
       .catch(() => { if (isMounted) setError('Could not load tickets.') })
       .finally(() => { if (isMounted) setIsLoading(false) })
-    return () => { isMounted = false }
+    void loadTickets()
+    const refreshInterval = window.setInterval(() => void loadTickets(), 5000)
+    const onFocus = () => void loadTickets()
+    window.addEventListener('focus', onFocus)
+    return () => { isMounted = false; window.clearInterval(refreshInterval); window.removeEventListener('focus', onFocus) }
   }, [artist.id])
 
   function handleNewTicket(ticket: TicketWithMessages) {
