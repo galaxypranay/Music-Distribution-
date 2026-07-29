@@ -327,7 +327,7 @@ export default function AdminPage() {
       {/* Header */}
       <header className="sticky top-0 z-30 border-b-[3px] border-ink bg-paper px-5 md:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between py-3.5">
-          <div className="flex items-center gap-4">
+          <div>
             <div>
               <Logo />
               <p className="mt-1 inline-block -rotate-2 bg-canary px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink">
@@ -346,6 +346,26 @@ export default function AdminPage() {
             Lock panel
           </button>
         </div>
+
+        {/* Desktop command bar — every workspace stays visible and one click away. */}
+        <nav className="mx-auto hidden max-w-7xl grid-cols-6 gap-2 border-t-[2.5px] border-dashed border-ink/30 py-3 md:grid">
+          {ADMIN_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                'brutal-press flex items-center justify-center gap-2 rounded-lg border-[2.5px] px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-all',
+                activeTab === id
+                  ? 'border-ink bg-canary text-ink shadow-[3px_3px_0_0_var(--color-ink)]'
+                  : 'border-ink bg-white text-ink-soft hover:bg-paper hover:text-ink'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </nav>
 
         {/* Mobile tab strip */}
         <nav className="flex border-t-[3px] border-ink md:hidden">
@@ -366,32 +386,8 @@ export default function AdminPage() {
         </nav>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-8 px-5 py-6 md:px-8 md:py-8">
-        <aside className="sticky top-[78px] hidden h-fit w-52 shrink-0 md:block">
-          <p className="mb-2 px-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-faint">
-            Workspace
-          </p>
-          <nav className="space-y-1 rounded-xl border-[3px] border-ink bg-white p-2 shadow-[4px_4px_0_0_var(--color-ink)]">
-            {ADMIN_TABS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-lg border-[2.5px] px-3 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.09em] transition-all',
-                  activeTab === id
-                    ? 'border-ink bg-canary text-ink shadow-[2px_2px_0_0_var(--color-ink)]'
-                    : 'border-transparent text-ink-soft hover:border-ink hover:bg-paper'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </aside>
-
-        <div className="min-w-0 flex-1">
+      <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+        <div className="min-w-0">
         {error ? (
           <p className="mb-6 rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
             {error}
