@@ -139,7 +139,18 @@ export function DashboardSessionProvider({ children }: { children: ReactNode }) 
     }
   }, [router])
 
-  useEffect(() => { void refreshUploadAccess() }, [refreshUploadAccess])
+  // Access may be changed by an admin in another session. Keep the lock state
+  // in sync without asking the artist to reload the dashboard.
+  useEffect(() => {
+    void refreshUploadAccess()
+    const interval = window.setInterval(() => void refreshUploadAccess(), 5000)
+    const onFocus = () => void refreshUploadAccess()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [refreshUploadAccess])
 
   const signOut = useCallback(() => {
     const supabase = getSupabaseBrowserClient()
