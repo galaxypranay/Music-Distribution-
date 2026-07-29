@@ -6,6 +6,7 @@ export interface ArtistSession {
   id: string
   name: string
   photo_url: string | null
+  display_id?: number
 }
 
 /** Pure parse — safe to call with the raw value from useBrowserStorageValue. */

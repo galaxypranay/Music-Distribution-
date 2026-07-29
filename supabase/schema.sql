@@ -42,6 +42,25 @@ create index if not exists artists_display_id_idx on public.artists (display_id)
 create index if not exists artists_user_id_idx on public.artists (user_id);
 
 -- ----------------------------------------------------------------------------
+-- artist_access (append-only history; newest row is the current access state)
+-- ----------------------------------------------------------------------------
+create table if not exists public.artist_access (
+  id uuid primary key default gen_random_uuid(),
+  artist_id uuid not null references public.artists (id) on delete cascade,
+  upload_access boolean not null default false,
+  plan_name text check (plan_name in ('Single Release', '1 Month Unlimited', '6 Months Unlimited', '1 Year Unlimited', 'Custom')),
+  custom_plan_name text,
+  start_date date,
+  expiry_date date,
+  status text not null default 'Locked' check (status in ('Locked', 'Unlocked', 'Expired')),
+  admin_notes text,
+  updated_by text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists artist_access_artist_created_idx on public.artist_access (artist_id, created_at desc);
+
+-- ----------------------------------------------------------------------------
 -- releases
 --
 -- A release is the "project" — a Single, EP, or Album. Its actual songs
@@ -191,6 +210,7 @@ on conflict (id) do nothing;
 -- and authenticated roles here is simply: no access at all.
 -- ----------------------------------------------------------------------------
 alter table public.artists       enable row level security;
+alter table public.artist_access enable row level security;
 alter table public.releases      enable row level security;
 alter table public.tracks        enable row level security;
 alter table public.tickets       enable row level security;

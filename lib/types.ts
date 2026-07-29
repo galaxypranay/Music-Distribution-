@@ -12,6 +12,30 @@ export interface Artist {
   created_at: string
 }
 
+export type AccessPlanName = 'Single Release' | '1 Month Unlimited' | '6 Months Unlimited' | '1 Year Unlimited' | 'Custom'
+
+/** Each admin change is a new row, so this also represents the access audit trail. */
+export interface ArtistAccess {
+  id: string
+  artist_id: string
+  upload_access: boolean
+  plan_name: AccessPlanName | null
+  custom_plan_name: string | null
+  start_date: string | null
+  expiry_date: string | null
+  status: 'Locked' | 'Unlocked' | 'Expired'
+  admin_notes: string | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UploadAccessState {
+  active: boolean
+  expired: boolean
+  access: ArtistAccess | null
+}
+
 export type ReleaseType = 'Single' | 'EP' | 'Album'
 
 export type ReleaseStatus =
