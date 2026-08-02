@@ -1,18 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import {
-  BarChart3,
-  Disc3,
-  LayoutDashboard,
-  LifeBuoy,
-  LogOut,
-  Search,
-  Settings,
-  Users,
-} from 'lucide-react'
-import Logo from '@/components/Logo'
+import { Disc3, LifeBuoy, Users } from 'lucide-react'
 import AdminGate from '@/components/admin/AdminGate'
+import AdminShell from '@/components/admin/AdminShell'
+import { type AdminTab } from '@/components/admin/admin-nav'
 import ArtistRoster, {
   type ArtistReleaseCounts,
   type ArtistTicketCounts,
@@ -24,7 +16,11 @@ import ActivityLogsPanel from '@/components/admin/ActivityLogsPanel'
 import AdminSettingsPanel from '@/components/admin/AdminSettingsPanel'
 import ReleaseManager from '@/components/admin/ReleaseManager'
 import TicketsList from '@/components/admin/TicketsList'
-import { cn } from '@/lib/utils'
+import Alert from '@/components/ui/Alert'
+import LoadingState from '@/components/ui/LoadingState'
+import SearchInput from '@/components/ui/SearchInput'
+import SectionHeader from '@/components/ui/SectionHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useBrowserStorageValue } from '@/lib/use-browser-storage-value'
 import { removeStorageItem, setStorageItem } from '@/lib/browser-storage'
 import type {
@@ -39,17 +35,6 @@ import type {
 } from '@/lib/types'
 
 const PASSCODE_KEY = 'spilrix_admin_passcode'
-
-type AdminTab = 'overview' | 'artists' | 'releases' | 'tickets' | 'logs' | 'settings'
-
-const ADMIN_TABS: { id: AdminTab; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'artists', label: 'Artists', icon: Users },
-  { id: 'releases', label: 'Releases', icon: Disc3 },
-  { id: 'tickets', label: 'Tickets', icon: LifeBuoy },
-  { id: 'logs', label: 'Activity', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
-]
 
 const RELEASE_FILTERS = [
   'All',
@@ -322,281 +307,194 @@ export default function AdminPage() {
 
   const isLoading = artists === null || releases === null || tickets === null
 
+  const navCounts = {
+    totalArtists: overview?.stats.totalArtists,
+    pendingReleases: overview?.stats.pendingReleases,
+    openTickets: overview?.stats.openTickets,
+  }
+
   return (
-    <main className="min-h-screen bg-paper">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b-[3px] border-ink bg-paper px-5 md:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between py-3.5">
-          <div>
-            <div>
-              <Logo />
-              <p className="mt-1 inline-block -rotate-2 bg-canary px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink">
-                Control room
-              </p>
-            </div>
+    <AdminShell
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      onSignOut={handleSignOut}
+      counts={navCounts}
+    >
+      {error ? (
+        <Alert variant="error" className="mb-6">
+          {error}
+        </Alert>
+      ) : null}
 
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="brutal-press flex items-center gap-2 rounded-lg border-[3px] border-ink bg-white px-4 py-2.5 text-sm font-bold uppercase text-ink shadow-[3px_3px_0_0_var(--color-ink)] transition-colors hover:bg-punch hover:text-white"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Lock panel
-          </button>
-        </div>
-
-        {/* Desktop command bar — every workspace stays visible and one click away. */}
-        <nav className="mx-auto hidden max-w-7xl grid-cols-6 gap-2 border-t-[2.5px] border-dashed border-ink/30 py-3 md:grid">
-          {ADMIN_TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              className={cn(
-                'brutal-press flex items-center justify-center gap-2 rounded-lg border-[2.5px] px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-all',
-                activeTab === id
-                  ? 'border-ink bg-canary text-ink shadow-[3px_3px_0_0_var(--color-ink)]'
-                  : 'border-ink bg-white text-ink-soft hover:bg-paper hover:text-ink'
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Mobile tab strip */}
-        <nav className="flex border-t-[3px] border-ink md:hidden">
-          {ADMIN_TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              className={cn(
-                'flex flex-1 flex-col items-center gap-1 border-r-[3px] border-ink py-2.5 text-[9px] font-bold uppercase last:border-r-0',
-                activeTab === id ? 'bg-canary text-ink' : 'bg-paper text-ink-soft'
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
-        <div className="min-w-0">
-        {error ? (
-          <p className="mb-6 rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
-            {error}
-          </p>
-        ) : null}
-
-        {isLoading ? (
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
-            Loading…
-          </p>
-        ) : (
-          <>
-            {/* Overview */}
-            {activeTab === 'overview' ? (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-                {storageUsage ? (
-                  <div className="order-2 xl:order-none"><StorageUsageMeter usage={storageUsage} /></div>
-                ) : null}
-                {overview ? (
-                  <AdminOverview
-                    stats={overview.stats}
-                    recentReleases={overview.recentReleases}
-                  />
-                ) : (
-                  <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
-                    Loading overview…
-                  </p>
-                )}
-              </div>
-            ) : null}
-
-            {/* Artists */}
-            {activeTab === 'artists' ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="font-display text-xl uppercase text-ink">
-                    Registered artists
-                    <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
-                      {artists.length}
-                    </span>
-                  </h2>
-
-                  <div className="relative w-full max-w-xs">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-                    <input
-                      type="text"
-                      value={artistSearch}
-                      onChange={(e) => setArtistSearch(e.target.value)}
-                      placeholder="Search by name or UID…"
-                      className="w-full rounded-lg border-[3px] border-ink bg-white py-2 pl-9 pr-3 text-sm font-medium text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
-                    />
-                  </div>
+      {isLoading ? (
+        <LoadingState label="Loading workspace…" />
+      ) : (
+        <div key={activeTab} className="animate-fade-up">
+          {/* ===== Overview ===== */}
+          {activeTab === 'overview' ? (
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+              {storageUsage ? (
+                <div className="order-2 xl:order-none">
+                  <StorageUsageMeter usage={storageUsage} />
                 </div>
-
-                <ArtistRoster
-                  artists={filteredArtists}
-                  countsByArtistId={countsByArtistId}
-                  ticketCountsByArtistId={ticketCountsByArtistId}
-                  selectedArtistId={selectedArtistId}
-                  onSelectArtist={handleSelectArtist}
+              ) : null}
+              {overview ? (
+                <AdminOverview
+                  stats={overview.stats}
+                  recentReleases={overview.recentReleases}
                 />
+              ) : (
+                <LoadingState label="Loading overview…" />
+              )}
+            </div>
+          ) : null}
 
-                {selectedArtist ? (
-                  <ArtistDetailPanel
-                    artist={selectedArtist}
-                    releases={selectedArtistReleases}
-                    counts={
-                      countsByArtistId[selectedArtist.id] ?? {
-                        total: 0, pending: 0, approved: 0, sent: 0, live: 0, rejected: 0,
-                      }
-                    }
-                    tickets={selectedArtistTickets}
-                    ticketCounts={
-                      ticketCountsByArtistId[selectedArtist.id] ?? { total: 0, open: 0 }
-                    }
-                    passcode={passcode}
-                    onReleaseChange={handleReleaseChange}
-                    onTicketStatusChange={handleTicketStatusChange}
-                    onNewMessage={handleNewMessage}
-                    onClose={() => setSelectedArtistId(null)}
+          {/* ===== Artists ===== */}
+          {activeTab === 'artists' ? (
+            <div className="space-y-6">
+              <SectionHeader
+                title="Registered artists"
+                icon={Users}
+                count={artists.length}
+                description="Every artist who has registered on the platform."
+                actions={
+                  <SearchInput
+                    value={artistSearch}
+                    onChange={setArtistSearch}
+                    placeholder="Search by name or UID…"
+                    label="Search artists"
                   />
-                ) : null}
-              </div>
-            ) : null}
+                }
+              />
 
-            {/* Releases (all releases incl. live-links management) */}
-            {activeTab === 'releases' ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="font-display text-xl uppercase text-ink">
-                    Releases
-                    <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
-                      {filteredReleases.length}
-                    </span>
-                  </h2>
+              <ArtistRoster
+                artists={filteredArtists}
+                countsByArtistId={countsByArtistId}
+                ticketCountsByArtistId={ticketCountsByArtistId}
+                selectedArtistId={selectedArtistId}
+                onSelectArtist={handleSelectArtist}
+              />
 
-                  <div className="relative w-full max-w-xs">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-                    <input
-                      type="text"
-                      value={releaseSearch}
-                      onChange={(e) => setReleaseSearch(e.target.value)}
-                      placeholder="Search by title or artist…"
-                      className="w-full rounded-lg border-[3px] border-ink bg-white py-2 pl-9 pr-3 text-sm font-medium text-ink placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {RELEASE_FILTERS.map((filter) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      onClick={() => setReleaseFilter(filter)}
-                      className={cn(
-                        'brutal-press rounded-md border-[2.5px] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-colors',
-                        releaseFilter === filter
-                          ? 'border-ink bg-canary text-ink shadow-[2px_2px_0_0_var(--color-ink)]'
-                          : 'border-ink bg-white text-ink-soft hover:bg-paper'
-                      )}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-
-                <ReleaseManager
-                  releases={filteredReleases}
+              {selectedArtist ? (
+                <ArtistDetailPanel
+                  artist={selectedArtist}
+                  releases={selectedArtistReleases}
+                  counts={
+                    countsByArtistId[selectedArtist.id] ?? {
+                      total: 0, pending: 0, approved: 0, sent: 0, live: 0, rejected: 0,
+                    }
+                  }
+                  tickets={selectedArtistTickets}
+                  ticketCounts={
+                    ticketCountsByArtistId[selectedArtist.id] ?? { total: 0, open: 0 }
+                  }
                   passcode={passcode}
                   onReleaseChange={handleReleaseChange}
-                  emptyMessage="No releases match this filter."
-                />
-              </div>
-            ) : null}
-
-            {/* Tickets (global, across all artists) */}
-            {activeTab === 'tickets' ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="font-display text-xl uppercase text-ink">
-                    Support tickets
-                    <span className="ml-3 font-mono text-xs font-normal text-ink-faint">
-                      {filteredTickets.length}
-                    </span>
-                  </h2>
-
-                  <div className="flex flex-wrap gap-2">
-                    {TICKET_FILTERS.map((filter) => (
-                      <button
-                        key={filter}
-                        type="button"
-                        onClick={() => setTicketFilter(filter)}
-                        className={cn(
-                          'brutal-press rounded-md border-[2.5px] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] transition-colors',
-                          ticketFilter === filter
-                            ? 'border-ink bg-canary text-ink shadow-[2px_2px_0_0_var(--color-ink)]'
-                            : 'border-ink bg-white text-ink-soft hover:bg-paper'
-                        )}
-                      >
-                        {filter}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <TicketsList
-                  tickets={filteredTickets}
-                  passcode={passcode}
-                  onStatusChange={handleTicketStatusChange}
+                  onTicketStatusChange={handleTicketStatusChange}
                   onNewMessage={handleNewMessage}
+                  onClose={() => setSelectedArtistId(null)}
                 />
-              </div>
-            ) : null}
+              ) : null}
+            </div>
+          ) : null}
 
-            {/* Activity Logs */}
-            {activeTab === 'logs' ? (
-              <div className="space-y-4">
-                <h2 className="font-display text-xl uppercase text-ink">Activity log</h2>
-                {activityLogs ? (
-                  <ActivityLogsPanel logs={activityLogs} />
-                ) : (
-                  <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
-                    Loading logs…
-                  </p>
-                )}
-              </div>
-            ) : null}
-
-            {/* Settings */}
-            {activeTab === 'settings' ? (
-              <div className="max-w-2xl space-y-4">
-                <h2 className="font-display text-xl uppercase text-ink">Admin settings</h2>
-                {appSettings ? (
-                  <AdminSettingsPanel
-                    settings={appSettings}
-                    passcode={passcode}
-                    onSaved={(updated) => setAppSettings(updated)}
+          {/* ===== Releases ===== */}
+          {activeTab === 'releases' ? (
+            <div className="space-y-6">
+              <SectionHeader
+                title="Releases"
+                icon={Disc3}
+                count={filteredReleases.length}
+                description="Review, approve and distribute submitted releases."
+                actions={
+                  <SearchInput
+                    value={releaseSearch}
+                    onChange={setReleaseSearch}
+                    placeholder="Search by title or artist…"
+                    label="Search releases"
                   />
-                ) : (
-                  <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-ink-faint">
-                    Loading settings…
-                  </p>
-                )}
-              </div>
-            ) : null}
-          </>
-        )}
+                }
+              />
+
+              <SegmentedControl
+                label="Filter releases by status"
+                value={releaseFilter}
+                onChange={setReleaseFilter}
+                options={RELEASE_FILTERS.map((filter) => ({ value: filter, label: filter }))}
+              />
+
+              <ReleaseManager
+                releases={filteredReleases}
+                passcode={passcode}
+                onReleaseChange={handleReleaseChange}
+                emptyMessage="No releases match this filter."
+              />
+            </div>
+          ) : null}
+
+          {/* ===== Tickets ===== */}
+          {activeTab === 'tickets' ? (
+            <div className="space-y-6">
+              <SectionHeader
+                title="Support tickets"
+                icon={LifeBuoy}
+                count={filteredTickets.length}
+                description="Conversations with artists across the whole platform."
+                actions={
+                  <SegmentedControl
+                    label="Filter tickets by status"
+                    value={ticketFilter}
+                    onChange={setTicketFilter}
+                    options={TICKET_FILTERS.map((filter) => ({ value: filter, label: filter }))}
+                  />
+                }
+              />
+
+              <TicketsList
+                tickets={filteredTickets}
+                passcode={passcode}
+                onStatusChange={handleTicketStatusChange}
+                onNewMessage={handleNewMessage}
+              />
+            </div>
+          ) : null}
+
+          {/* ===== Activity ===== */}
+          {activeTab === 'logs' ? (
+            <div className="space-y-6">
+              <SectionHeader
+                title="Activity log"
+                icon={Disc3}
+                description="A chronological record of everything happening on the platform."
+              />
+              {activityLogs ? (
+                <ActivityLogsPanel logs={activityLogs} />
+              ) : (
+                <LoadingState label="Loading logs…" />
+              )}
+            </div>
+          ) : null}
+
+          {/* ===== Settings ===== */}
+          {activeTab === 'settings' ? (
+            <div className="max-w-2xl space-y-6">
+              <SectionHeader
+                title="Admin settings"
+                description="Control platform-wide configuration and maintenance mode."
+              />
+              {appSettings ? (
+                <AdminSettingsPanel
+                  settings={appSettings}
+                  passcode={passcode}
+                  onSaved={(updated) => setAppSettings(updated)}
+                />
+              ) : (
+                <LoadingState label="Loading settings…" />
+              )}
+            </div>
+          ) : null}
         </div>
-      </div>
-    </main>
+      )}
+    </AdminShell>
   )
 }

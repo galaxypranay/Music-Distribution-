@@ -105,13 +105,30 @@
     box-shadow: 9px 9px 0 0 var(--color-ink);
   }
 
-  /* Tactile "press down" feedback for buttons and clickable cards. */
+  /* Tactile "press down" feedback for buttons and clickable cards. Pairs with
+     .brutal-hover, which lifts the element on hover; the press snaps it back. */
   .brutal-press {
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   .brutal-press:active {
     transform: translate(3px, 3px);
     box-shadow: 0 0 0 0 var(--color-ink);
+  }
+
+  /* Lifts a clickable surface on hover/focus by translating up a hair and
+     deepening its offset shadow. Keeps the brutalist depth, adds life. */
+  .brutal-hover {
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .brutal-hover:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 7px 7px 0 0 var(--color-ink);
+  }
+  .brutal-hover:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 7px 7px 0 0 var(--color-ink);
   }
 
   /* Signature motif: a slightly rotated rubber-stamp, used for status badges. */
@@ -125,12 +142,31 @@
     background-size: 16px 16px;
   }
 
+  /* Thin branded scrollbar for scrollable panels. */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink) transparent;
+  }
   .scrollbar-thin::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--color-ink);
+    border-radius: 0;
+  }
+
+  /* Hide scrollbars on horizontally scrolling tab strips (mobile nav, chips)
+     while keeping touch/keyboard scrolling fully usable. */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -146,7 +182,38 @@
 }
 
 .animate-fade-up {
-  animation: fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Subtle staggered entry for repeated items (lists, grids). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease both;
+}
+
+/* Pulsing placeholder for loading states. */
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes eq-bounce {
@@ -166,7 +233,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .brutal-press,
-  .animate-fade-up {
+  .brutal-hover,
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-skeleton {
     transition: none;
     animation: none;
   }
