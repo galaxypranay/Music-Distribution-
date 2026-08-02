@@ -25,6 +25,9 @@ import {
 } from '@/lib/utils'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
+import Modal from '@/components/ui/Modal'
+import EmptyState from '@/components/ui/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
 
 interface ReleaseManagerProps {
@@ -53,6 +56,10 @@ export default function ReleaseManager({
   const [reasonDraft, setReasonDraft] = useState('')
   const [linkDrafts, setLinkDrafts] = useState({ spotify: '', apple: '', youtube: '' })
   const [deletionHours, setDeletionHours] = useState<24 | 48>(24)
+
+  const currentRelease = actionMode
+    ? releases.find((r) => r.id === actionMode.releaseId) ?? null
+    : null
 
   async function patchRelease(
     release: ReleaseWithTracks,
@@ -148,6 +155,7 @@ export default function ReleaseManager({
 
       const result = await response.json()
       onReleaseChange(result.release as ReleaseWithTracks)
+      setActionMode(null)
     } catch {
       setErrorId(release.id)
     } finally {
@@ -193,11 +201,18 @@ export default function ReleaseManager({
     }
   }
 
+  function handleCloseModal() {
+    setActionMode(null)
+    setReasonDraft('')
+  }
+
   if (releases.length === 0) {
     return (
-      <Card className="px-6 py-10 text-center">
-        <p className="text-sm font-medium text-ink-soft">{emptyMessage}</p>
-      </Card>
+      <EmptyState
+        icon={Music2}
+        title="No releases"
+        message={emptyMessage}
+      />
     )
   }
 
@@ -210,301 +225,128 @@ export default function ReleaseManager({
   })
 
   return (
-    <div className="flex flex-col gap-5">
-      {sorted.map((release) => {
-        const isPending = pendingId === release.id
-        const isDownloading = downloadingId === release.id
-        const days = getDaysUntil(release.release_date)
-        const isUrgent =
-          days !== null && days <= 3 && !['Live', 'Sent to Platforms'].includes(release.status)
-        const isOverdue = days !== null && days < 0 && release.status !== 'Live'
-        const inReject = actionMode?.releaseId === release.id && actionMode.type === 'reject'
-        const inChanges = actionMode?.releaseId === release.id && actionMode.type === 'changes'
-        const inLive = actionMode?.releaseId === release.id && actionMode.type === 'live'
-        const inDelete = actionMode?.releaseId === release.id && actionMode.type === 'delete'
-        const hasScheduledDeletion = Boolean(release.scheduled_deletion_at)
+    <>
+      <div className="flex flex-col gap-5">
+        {sorted.map((release) => {
+          const isPending = pendingId === release.id
+          const isDownloading = downloadingId === release.id
+          const days = getDaysUntil(release.release_date)
+          const isUrgent =
+            days !== null && days <= 3 && !['Live', 'Sent to Platforms'].includes(release.status)
+          const isOverdue = days !== null && days < 0 && release.status !== 'Live'
+          const hasScheduledDeletion = Boolean(release.scheduled_deletion_at)
 
-        return (
-          <Card key={release.id} className="overflow-hidden">
-            <div className="flex flex-wrap items-start gap-4 p-5">
-              {release.cover_art_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={release.cover_art_url}
-                  alt={release.title}
-                  className="h-20 w-20 shrink-0 rounded-md border-[2.5px] border-ink object-cover"
-                />
-              ) : (
-                <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-paper">
-                  <Music2 className="h-7 w-7 text-ink-faint" />
-                </span>
-              )}
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-display text-lg uppercase text-ink">{release.title}</p>
-                  <span className="rounded-md border-2 border-ink bg-paper px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-ink">
-                    {release.release_type}
+          return (
+            <Card key={release.id} className="overflow-hidden">
+              <div className="flex flex-wrap items-start gap-4 p-5">
+                {release.cover_art_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={release.cover_art_url}
+                    alt={release.title}
+                    className="h-20 w-20 shrink-0 rounded-md border-[2.5px] border-ink object-cover"
+                  />
+                ) : (
+                  <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-paper">
+                    <Music2 className="h-7 w-7 text-ink-faint" />
                   </span>
-                  <StatusBadge status={release.status} />
-                  {days !== null ? (
-                    <span
-                      className={cn(
-                        'rounded-md border-2 border-ink px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]',
-                        isOverdue
-                          ? 'bg-punch text-white'
-                          : isUrgent
-                            ? 'bg-canary text-ink'
-                            : 'bg-white text-ink-soft'
-                      )}
-                    >
-                      {formatDaysUntil(days)}
-                    </span>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-display text-lg uppercase tracking-tight text-ink">{release.title}</p>
+                    <Badge variant="neutral">
+                      {release.release_type}
+                    </Badge>
+                    <StatusBadge status={release.status} />
+                    {days !== null ? (
+                      <Badge variant={isOverdue ? 'punch' : isUrgent ? 'canary' : 'neutral'}>
+                        {formatDaysUntil(days)}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
+                    {release.artist_name} · Release date: {formatDate(release.release_date)}
+                    {release.language ? <> · {release.language}</> : null}
+                  </p>
+                  {release.copyright ? (
+                    <p className="mt-0.5 font-mono text-[10px] font-medium text-ink-faint">
+                      {release.copyright}
+                    </p>
                   ) : null}
-                </div>
-                <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
-                  {release.artist_name} · Release date: {formatDate(release.release_date)}
-                  {release.language ? <> · {release.language}</> : null}
-                </p>
-                {release.copyright ? (
-                  <p className="mt-0.5 font-mono text-[10px] font-medium text-ink-faint">
-                    {release.copyright}
-                  </p>
-                ) : null}
 
-                <ReleaseMetadata release={release} />
+                  <ReleaseMetadata release={release} />
 
-                <ul className="mt-3 flex flex-col gap-2">
-                  {release.tracks.map((track) => (
-                    <li key={track.id} className="text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-ink">
-                          {track.track_number}. {track.song_title}
-                        </span>
-                        {track.genre ? <span className="text-ink-faint">{track.genre}</span> : null}
-                        {track.explicit ? (
-                          <span className="rounded border-2 border-ink bg-punch px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase text-white">
-                            E
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {release.tracks.map((track) => (
+                      <li key={track.id} className="text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-ink">
+                            {track.track_number}. {track.song_title}
                           </span>
+                          {track.genre ? <span className="text-ink-faint">{track.genre}</span> : null}
+                          {track.explicit ? (
+                            <Badge variant="punch" className="!text-[8px] !px-1.5 !py-0">
+                              E
+                            </Badge>
+                          ) : null}
+                          <audio controls src={track.audio_url} className="h-8 w-44" />
+                        </div>
+                        {track.lyrics ? (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint hover:text-ink">
+                              Lyrics
+                            </summary>
+                            <p className="mt-1 whitespace-pre-wrap rounded-md border-2 border-ink/20 bg-paper px-3 py-2 text-sm font-medium text-ink-soft">
+                              {track.lyrics}
+                            </p>
+                          </details>
                         ) : null}
-                        <audio controls src={track.audio_url} className="h-8 w-44" />
-                      </div>
-                      {track.lyrics ? (
-                        <details className="mt-1">
-                          <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint">
-                            Lyrics
-                          </summary>
-                          <p className="mt-1 whitespace-pre-wrap rounded-md border-2 border-ink/20 bg-paper px-3 py-2 text-sm font-medium text-ink-soft">
-                            {track.lyrics}
-                          </p>
-                        </details>
-                      ) : null}
-                      <TrackMetadata track={track} />
-                    </li>
-                  ))}
-                </ul>
+                        <TrackMetadata track={track} />
+                      </li>
+                    ))}
+                  </ul>
 
-                {release.status === 'Needs Changes' && release.admin_note ? (
-                  <p className="mt-3 rounded-md border-2 border-ink bg-canary/20 px-3 py-2 text-sm font-medium text-ink">
-                    <span className="font-bold">Changes requested: </span>
-                    {release.admin_note}
-                  </p>
-                ) : null}
-
-                {release.status === 'Rejected' && release.rejection_reason ? (
-                  <p className="mt-3 rounded-md border-2 border-ink bg-punch/10 px-3 py-2 text-sm font-medium text-ink">
-                    <span className="font-bold text-punch">Reason given: </span>
-                    {release.rejection_reason}
-                  </p>
-                ) : null}
-
-                {hasScheduledDeletion ? (
-                  <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-md border-2 border-ink bg-punch px-3 py-2.5 text-white">
-                    <p className="flex items-start gap-2 text-sm font-bold">
-                      <Hourglass className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>
-                        Scheduled for deletion on{' '}
-                        {formatDateTime(release.scheduled_deletion_at)}.
-                        {release.deletion_reason ? <> Reason: {release.deletion_reason}</> : null}
-                      </span>
-                    </p>
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() => cancelScheduledDeletion(release)}
-                      className="brutal-press flex shrink-0 items-center gap-1.5 rounded-md border-2 border-ink bg-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors disabled:opacity-40"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Cancel deletion
-                    </button>
-                  </div>
-                ) : null}
-
-                {errorId === release.id ? (
-                  <p className="mt-2 font-mono text-[10px] font-bold text-punch">Action failed</p>
-                ) : null}
-
-                {inReject ? (
-                  <div className="mt-3 rounded-md border-2 border-ink bg-paper p-3">
-                    <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
-                      Why is this being rejected?
-                    </label>
-                    <textarea
-                      value={reasonDraft}
-                      onChange={(e) => setReasonDraft(e.target.value)}
-                      placeholder="e.g. Audio quality is too low, please re-upload."
-                      className="min-h-20 w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        variant="danger"
-                        isLoading={isPending}
-                        disabled={isPending || !reasonDraft.trim()}
-                        onClick={() =>
-                          patchRelease(release, { status: 'Rejected', rejection_reason: reasonDraft })
-                        }
-                      >
-                        Confirm reject
-                      </Button>
-                      <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
-                        Cancel
-                      </Button>
+                  {release.status === 'Needs Changes' && release.admin_note ? (
+                    <div className="mt-3 rounded-md border-2 border-ink bg-canary/20 px-3 py-2 text-sm font-medium text-ink">
+                      <span className="font-bold">Changes requested: </span>
+                      {release.admin_note}
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
 
-                {inChanges ? (
-                  <div className="mt-3 rounded-md border-2 border-ink bg-paper p-3">
-                    <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
-                      What should the artist change?
-                    </label>
-                    <textarea
-                      value={reasonDraft}
-                      onChange={(e) => setReasonDraft(e.target.value)}
-                      placeholder="e.g. Cover art has a typo — fix and resubmit."
-                      className="min-h-20 w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        isLoading={isPending}
-                        disabled={isPending || !reasonDraft.trim()}
-                        onClick={() =>
-                          patchRelease(release, {
-                            status: 'Needs Changes',
-                            admin_note: reasonDraft,
-                          })
-                        }
-                      >
-                        Request changes
-                      </Button>
-                      <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
-                        Cancel
-                      </Button>
+                  {release.status === 'Rejected' && release.rejection_reason ? (
+                    <div className="mt-3 rounded-md border-2 border-ink bg-punch/10 px-3 py-2 text-sm font-medium text-ink">
+                      <span className="font-bold text-punch">Reason given: </span>
+                      {release.rejection_reason}
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
 
-                {inLive ? (
-                  <div className="mt-3 rounded-md border-2 border-ink bg-paper p-3">
-                    <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
-                      Live links (optional, add what you have)
-                    </label>
-                    <div className="flex flex-col gap-2">
-                      <input
-                        value={linkDrafts.spotify}
-                        onChange={(e) => setLinkDrafts((d) => ({ ...d, spotify: e.target.value }))}
-                        placeholder="Spotify URL"
-                        className="w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                      />
-                      <input
-                        value={linkDrafts.apple}
-                        onChange={(e) => setLinkDrafts((d) => ({ ...d, apple: e.target.value }))}
-                        placeholder="Apple Music URL"
-                        className="w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                      />
-                      <input
-                        value={linkDrafts.youtube}
-                        onChange={(e) => setLinkDrafts((d) => ({ ...d, youtube: e.target.value }))}
-                        placeholder="YouTube URL"
-                        className="w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                      />
-                    </div>
-                    <div className="mt-2 flex gap-2">
-                      <Button
+                  {hasScheduledDeletion ? (
+                    <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-md border-2 border-ink bg-punch px-3 py-2.5 text-white">
+                      <p className="flex items-start gap-2 text-sm font-bold">
+                        <Hourglass className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Scheduled for deletion on{' '}
+                          {formatDateTime(release.scheduled_deletion_at)}.
+                          {release.deletion_reason ? <> Reason: {release.deletion_reason}</> : null}
+                        </span>
+                      </p>
+                      <button
                         type="button"
-                        isLoading={isPending}
                         disabled={isPending}
-                        onClick={() =>
-                          patchRelease(release, {
-                            status: 'Live',
-                            spotify_url: linkDrafts.spotify.trim() || null,
-                            apple_music_url: linkDrafts.apple.trim() || null,
-                            youtube_url: linkDrafts.youtube.trim() || null,
-                          })
-                        }
+                        onClick={() => cancelScheduledDeletion(release)}
+                        className="brutal-press flex shrink-0 items-center gap-1.5 rounded-md border-2 border-ink bg-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors disabled:opacity-40"
                       >
-                        Confirm live
-                      </Button>
-                      <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
-                        Cancel
-                      </Button>
+                        <RotateCcw className="h-3 w-3" />
+                        Cancel deletion
+                      </button>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
 
-                {inDelete ? (
-                  <div className="mt-3 rounded-md border-2 border-ink bg-paper p-3">
-                    <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
-                      Why is this being deleted?
-                    </label>
-                    <textarea
-                      value={reasonDraft}
-                      onChange={(e) => setReasonDraft(e.target.value)}
-                      placeholder="e.g. Duplicate submission, removing the older one."
-                      className="min-h-20 w-full rounded-md border-[2.5px] border-ink bg-white px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
-                    />
-                    <p className="mb-1.5 mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
-                      Remove after
-                    </p>
-                    <div className="flex gap-2">
-                      {DELETION_WINDOWS.map((hours) => (
-                        <button
-                          key={hours}
-                          type="button"
-                          onClick={() => setDeletionHours(hours)}
-                          className={cn(
-                            'flex-1 rounded-md border-2 border-ink px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.08em] transition-colors',
-                            deletionHours === hours ? 'bg-ink text-paper' : 'bg-white text-ink'
-                          )}
-                        >
-                          {hours} hours
-                        </button>
-                      ))}
-                    </div>
-                    <p className="mt-2 text-xs font-medium text-ink-faint">
-                      The release stays visible (with this reason shown to the artist) until the
-                      deadline passes — it doesn&apos;t delete instantly.
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        variant="danger"
-                        isLoading={isPending}
-                        disabled={isPending || !reasonDraft.trim()}
-                        onClick={() => confirmScheduleDeletion(release)}
-                      >
-                        Schedule deletion
-                      </Button>
-                      <Button type="button" variant="ghost" onClick={() => setActionMode(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
+                  {errorId === release.id ? (
+                    <p className="mt-2 font-mono text-[10px] font-bold text-punch">Action failed</p>
+                  ) : null}
 
-                {!inReject && !inChanges && !inLive && !inDelete ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <ActionPill
                       icon={Check}
@@ -556,13 +398,261 @@ export default function ReleaseManager({
                       onClick={() => startDelete(release)}
                     />
                   </div>
-                ) : null}
+                </div>
               </div>
-            </div>
-          </Card>
-        )
-      })}
-    </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* ===== Modal-based action forms ===== */}
+
+      <RejectModal
+        open={actionMode?.type === 'reject' && actionMode?.releaseId === currentRelease?.id}
+        release={currentRelease}
+        reason={reasonDraft}
+        onReasonChange={setReasonDraft}
+        isPending={pendingId === currentRelease?.id}
+        onClose={handleCloseModal}
+        onConfirm={() => currentRelease && patchRelease(currentRelease, { status: 'Rejected', rejection_reason: reasonDraft })}
+      />
+
+      <ChangesModal
+        open={actionMode?.type === 'changes' && actionMode?.releaseId === currentRelease?.id}
+        release={currentRelease}
+        reason={reasonDraft}
+        onReasonChange={setReasonDraft}
+        isPending={pendingId === currentRelease?.id}
+        onClose={handleCloseModal}
+        onConfirm={() => currentRelease && patchRelease(currentRelease, { status: 'Needs Changes', admin_note: reasonDraft })}
+      />
+
+      <LiveModal
+        open={actionMode?.type === 'live' && actionMode?.releaseId === currentRelease?.id}
+        release={currentRelease}
+        links={linkDrafts}
+        onLinksChange={setLinkDrafts}
+        isPending={pendingId === currentRelease?.id}
+        onClose={handleCloseModal}
+        onConfirm={() => currentRelease && patchRelease(currentRelease, {
+          status: 'Live',
+          spotify_url: linkDrafts.spotify.trim() || null,
+          apple_music_url: linkDrafts.apple.trim() || null,
+          youtube_url: linkDrafts.youtube.trim() || null,
+        })}
+      />
+
+      <DeleteModal
+        open={actionMode?.type === 'delete' && actionMode?.releaseId === currentRelease?.id}
+        release={currentRelease}
+        reason={reasonDraft}
+        onReasonChange={setReasonDraft}
+        deletionHours={deletionHours}
+        onDeletionHoursChange={setDeletionHours}
+        isPending={pendingId === currentRelease?.id}
+        onClose={handleCloseModal}
+        onConfirm={() => currentRelease && confirmScheduleDeletion(currentRelease)}
+      />
+    </>
+  )
+}
+
+/* ================================================================
+   Sub-components & helpers (pure, no hooks)
+   ================================================================ */
+
+interface ReasonModalProps {
+  open: boolean
+  release: ReleaseWithTracks | null
+  reason: string
+  onReasonChange: (v: string) => void
+  isPending: boolean
+  onClose: () => void
+  onConfirm: () => void
+}
+
+function RejectModal({ open, release, reason, onReasonChange, isPending, onClose, onConfirm }: ReasonModalProps) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Reject release"
+      description={release ? `Reject "${release.title}" and provide a reason to the artist.` : ''}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" isLoading={isPending} disabled={isPending || !reason.trim()} onClick={onConfirm}>
+            Confirm reject
+          </Button>
+        </>
+      }
+    >
+      <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+        Why is this being rejected?
+      </label>
+      <textarea
+        value={reason}
+        onChange={(e) => onReasonChange(e.target.value)}
+        placeholder="e.g. Audio quality is too low, please re-upload."
+        className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+      />
+    </Modal>
+  )
+}
+
+function ChangesModal({ open, release, reason, onReasonChange, isPending, onClose, onConfirm }: ReasonModalProps) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Request changes"
+      description={release ? `Tell the artist what needs fixing on "${release.title}".` : ''}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button isLoading={isPending} disabled={isPending || !reason.trim()} onClick={onConfirm}>
+            Request changes
+          </Button>
+        </>
+      }
+    >
+      <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+        What should the artist change?
+      </label>
+      <textarea
+        value={reason}
+        onChange={(e) => onReasonChange(e.target.value)}
+        placeholder="e.g. Cover art has a typo — fix and resubmit."
+        className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+      />
+    </Modal>
+  )
+}
+
+function LiveModal({
+  open,
+  release,
+  links,
+  onLinksChange,
+  isPending,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean
+  release: ReleaseWithTracks | null
+  links: { spotify: string; apple: string; youtube: string }
+  onLinksChange: (v: { spotify: string; apple: string; youtube: string }) => void
+  isPending: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Mark as live"
+      description={release ? `Add live links for "${release.title}". All fields are optional.` : ''}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button isLoading={isPending} disabled={isPending} onClick={onConfirm}>
+            Confirm live
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        <input
+          value={links.spotify}
+          onChange={(e) => onLinksChange({ ...links, spotify: e.target.value })}
+          placeholder="Spotify URL"
+          className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+        />
+        <input
+          value={links.apple}
+          onChange={(e) => onLinksChange({ ...links, apple: e.target.value })}
+          placeholder="Apple Music URL"
+          className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+        />
+        <input
+          value={links.youtube}
+          onChange={(e) => onLinksChange({ ...links, youtube: e.target.value })}
+          placeholder="YouTube URL"
+          className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+        />
+      </div>
+    </Modal>
+  )
+}
+
+function DeleteModal({
+  open,
+  release,
+  reason,
+  onReasonChange,
+  deletionHours,
+  onDeletionHoursChange,
+  isPending,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean
+  release: ReleaseWithTracks | null
+  reason: string
+  onReasonChange: (v: string) => void
+  deletionHours: 24 | 48
+  onDeletionHoursChange: (v: 24 | 48) => void
+  isPending: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Schedule deletion"
+      description={release ? `Schedule "${release.title}" for removal.` : ''}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" isLoading={isPending} disabled={isPending || !reason.trim()} onClick={onConfirm}>
+            Schedule deletion
+          </Button>
+        </>
+      }
+    >
+      <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+        Why is this being deleted?
+      </label>
+      <textarea
+        value={reason}
+        onChange={(e) => onReasonChange(e.target.value)}
+        placeholder="e.g. Duplicate submission, removing the older one."
+        className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
+      />
+      <p className="mb-1.5 mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+        Remove after
+      </p>
+      <div className="flex gap-2">
+        {DELETION_WINDOWS.map((hours) => (
+          <button
+            key={hours}
+            type="button"
+            onClick={() => onDeletionHoursChange(hours)}
+            className={cn(
+              'brutal-press flex-1 rounded-md border-2 border-ink px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.08em] transition-colors',
+              deletionHours === hours ? 'bg-ink text-paper' : 'bg-white text-ink'
+            )}
+          >
+            {hours} hours
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs font-medium text-ink-faint">
+        The release stays visible (with this reason shown to the artist) until the
+        deadline passes — it doesn&apos;t delete instantly.
+      </p>
+    </Modal>
   )
 }
 
@@ -589,7 +679,7 @@ function ReleaseMetadata({ release }: { release: ReleaseWithTracks }) {
 
   return (
     <details className="mt-3 rounded-md border-2 border-ink bg-paper">
-      <summary className="cursor-pointer px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+      <summary className="cursor-pointer px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink hover:bg-paper">
         Submission details
       </summary>
       <dl className="grid gap-x-5 gap-y-3 border-t-2 border-ink p-3 text-sm sm:grid-cols-2">
@@ -640,7 +730,7 @@ function TrackMetadata({ track }: { track: ReleaseWithTracks['tracks'][number] }
 
   return (
     <details className="mt-2 rounded-md border-2 border-ink/20 bg-paper px-3 py-2">
-      <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint">
+      <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint hover:text-ink">
         Track details
       </summary>
       <dl className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2">

@@ -1,12 +1,16 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Check, Paperclip, RotateCcw, Send } from 'lucide-react'
+import { Check, ChevronDown, Paperclip, RotateCcw, Send, Ticket } from 'lucide-react'
 import type { TicketWithMessages, TicketStatus, TicketMessage } from '@/lib/types'
 import { formatDateTime, getFileExtension } from '@/lib/utils'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
+import Alert from '@/components/ui/Alert'
+import EmptyState from '@/components/ui/EmptyState'
+import { cn } from '@/lib/utils'
 
 interface TicketsListProps {
   tickets: TicketWithMessages[]
@@ -25,9 +29,11 @@ export default function TicketsList({
 
   if (tickets.length === 0) {
     return (
-      <Card className="px-6 py-8 text-center">
-        <p className="text-sm font-medium text-ink-soft">No support tickets from this artist.</p>
-      </Card>
+      <EmptyState
+        icon={Ticket}
+        title="No support tickets"
+        message="Tickets raised by artists will show up here. When a conversation starts, you can reply and resolve it from this view."
+      />
     )
   }
 
@@ -143,22 +149,25 @@ function TicketCard({
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={isExpanded}
         className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-paper"
       >
         <div className="min-w-0">
-          <p className="truncate font-bold text-ink">{ticket.subject}</p>
+          <p className="truncate font-display text-sm uppercase tracking-tight text-ink">{ticket.subject}</p>
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-faint">
             {ticket.messages.length} {ticket.messages.length === 1 ? 'message' : 'messages'} ·{' '}
             {formatDateTime(ticket.created_at)}
           </p>
         </div>
-        <span
-          className={`stamp-rotate shrink-0 rounded-md border-2 border-ink px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] ${
-            isOpen ? 'bg-cobalt text-white' : 'bg-lime text-ink'
-          }`}
-        >
-          {ticket.status}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant={isOpen ? 'cobalt' : 'lime'} stamp>
+            {ticket.status}
+          </Badge>
+          <ChevronDown
+            className={cn('h-4 w-4 shrink-0 text-ink-faint transition-transform', isExpanded && 'rotate-180')}
+            aria-hidden="true"
+          />
+        </div>
       </button>
 
       {isExpanded ? (
@@ -170,9 +179,9 @@ function TicketCard({
           </div>
 
           {error ? (
-            <p className="mx-4 mb-3 rounded-md border-2 border-ink bg-punch px-3 py-2 text-sm font-bold text-white">
-              {error}
-            </p>
+            <div className="px-4 pb-3">
+              <Alert variant="error">{error}</Alert>
+            </div>
           ) : null}
 
           {isOpen ? (
@@ -182,7 +191,7 @@ function TicketCard({
                 onChange={(e) => setReply(e.target.value)}
                 placeholder="Write a reply…"
                 rows={3}
-                className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint focus:outline-none"
+                className="w-full rounded-lg border-[2.5px] border-ink bg-paper px-3 py-2 text-sm font-medium text-ink placeholder:text-ink-faint transition-shadow focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button
@@ -236,11 +245,12 @@ function TicketCard({
 function MessageBubble({ message }: { message: TicketMessage }) {
   const isAdmin = message.sender === 'admin'
   return (
-    <div className={`flex flex-col gap-1 ${isAdmin ? 'items-end' : 'items-start'}`}>
+    <div className={cn('flex flex-col gap-1', isAdmin ? 'items-end' : 'items-start')}>
       <div
-        className={`max-w-[85%] rounded-lg border-[2.5px] border-ink px-4 py-2.5 shadow-[2px_2px_0_0_var(--color-ink)] ${
+        className={cn(
+          'max-w-[85%] rounded-lg border-[2.5px] border-ink px-4 py-2.5 shadow-[2px_2px_0_0_var(--color-ink)]',
           isAdmin ? 'bg-cobalt text-white' : 'bg-white text-ink'
-        }`}
+        )}
       >
         <p className="text-sm font-medium leading-relaxed">{message.message}</p>
         {message.attachment_url ? (
@@ -248,9 +258,10 @@ function MessageBubble({ message }: { message: TicketMessage }) {
             href={message.attachment_url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`mt-2 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] underline ${
+            className={cn(
+              'mt-2 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] underline',
               isAdmin ? 'text-white/80' : 'text-ink-soft'
-            }`}
+            )}
           >
             <Paperclip className="h-3 w-3" />
             {message.attachment_name ?? 'Attachment'}

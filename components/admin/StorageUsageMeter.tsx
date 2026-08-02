@@ -1,6 +1,14 @@
+import { HardDrive } from 'lucide-react'
 import { formatBytes } from '@/lib/utils'
 import type { StorageUsage } from '@/lib/types'
 import Card from '@/components/ui/Card'
+
+const BUCKET_COLORS: Record<string, string> = {
+  covers: 'bg-canary',
+  songs: 'bg-cobalt',
+  profiles: 'bg-lime',
+  attachments: 'bg-punch',
+}
 
 export default function StorageUsageMeter({ usage }: { usage: StorageUsage }) {
   const percent = usage.limitBytes > 0 ? (usage.usedBytes / usage.limitBytes) * 100 : 0
@@ -10,14 +18,19 @@ export default function StorageUsageMeter({ usage }: { usage: StorageUsage }) {
     percent >= 90 ? 'bg-punch' : percent >= 70 ? 'bg-canary' : 'bg-lime'
 
   return (
-    <Card className="px-5 py-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
-          Supabase storage
-        </p>
+    <Card className="px-5 py-5">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-md border-[2.5px] border-ink bg-paper">
+          <HardDrive className="h-4 w-4 text-ink" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm uppercase tracking-tight text-ink">Supabase storage</p>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
+            {usage.fileCount} files
+          </p>
+        </div>
         <p className="font-mono text-xs font-bold text-ink-soft">
           {formatBytes(usage.usedBytes)} / {formatBytes(usage.limitBytes)}
-          <span className="ml-2 text-ink-faint">({usage.fileCount} files)</span>
         </p>
       </div>
 
@@ -27,7 +40,7 @@ export default function StorageUsageMeter({ usage }: { usage: StorageUsage }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label="Supabase storage used"
-        className="mt-2.5 h-4 w-full overflow-hidden rounded-md border-[2.5px] border-ink bg-paper"
+        className="mt-3 h-4 w-full overflow-hidden rounded-md border-[2.5px] border-ink bg-paper"
       >
         <div
           className={`h-full ${fillColor} transition-[width] duration-500`}
@@ -75,11 +88,4 @@ export default function StorageUsageMeter({ usage }: { usage: StorageUsage }) {
       ) : null}
     </Card>
   )
-}
-
-const BUCKET_COLORS: Record<string, string> = {
-  covers: 'bg-canary',
-  songs: 'bg-cobalt',
-  profiles: 'bg-lime',
-  attachments: 'bg-punch',
 }

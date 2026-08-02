@@ -1,7 +1,8 @@
-import { LifeBuoy, User as UserIcon } from 'lucide-react'
+import { LifeBuoy, UserSearch, User as UserIcon } from 'lucide-react'
 import type { Artist } from '@/lib/types'
 import { formatDate, cn } from '@/lib/utils'
-import Card from '@/components/ui/Card'
+import Badge from '@/components/ui/Badge'
+import EmptyState from '@/components/ui/EmptyState'
 
 export interface ArtistReleaseCounts {
   total: number
@@ -34,9 +35,11 @@ export default function ArtistRoster({
 }: ArtistRosterProps) {
   if (artists.length === 0) {
     return (
-      <Card className="px-6 py-10 text-center">
-        <p className="text-sm font-medium text-ink-soft">No artists match that search.</p>
-      </Card>
+      <EmptyState
+        icon={UserSearch}
+        title="No artists found"
+        message="No artists match that search. Try a different name or UID."
+      />
     )
   }
 
@@ -61,13 +64,13 @@ export default function ArtistRoster({
             onClick={() => onSelectArtist(artist.id)}
             aria-pressed={isSelected}
             className={cn(
-              'brutal-press flex flex-col gap-3 rounded-xl border-[3px] border-ink bg-white p-4 text-left transition-shadow',
+              'brutal-hover flex flex-col gap-3 rounded-xl border-[3px] border-ink bg-white p-4 text-left',
               isSelected
                 ? 'shadow-[5px_5px_0_0_var(--color-cobalt)]'
                 : 'shadow-[5px_5px_0_0_var(--color-ink)]'
             )}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3.5">
               {artist.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -81,27 +84,30 @@ export default function ArtistRoster({
                 </span>
               )}
               <div className="min-w-0">
-                <p className="truncate font-bold text-ink">{artist.name}</p>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">
-                  UID {artist.display_id} · Joined {formatDate(artist.created_at)}
+                <p className="truncate font-display text-sm uppercase tracking-tight text-ink">{artist.name}</p>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">
+                  UID {artist.display_id}
+                </p>
+                <p className="font-mono text-[10px] text-ink-faint">
+                  Joined {formatDate(artist.created_at)}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-md border-2 border-ink bg-paper px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+              <Badge variant="neutral">
                 {counts.total} {counts.total === 1 ? 'release' : 'releases'}
-              </span>
+              </Badge>
               {counts.pending > 0 ? (
-                <span className="stamp-rotate rounded-md border-2 border-ink bg-canary px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-ink">
+                <Badge variant="canary" stamp>
                   {counts.pending} pending
-                </span>
+                </Badge>
               ) : null}
               {ticketCounts.open > 0 ? (
-                <span className="stamp-rotate flex items-center gap-1 rounded-md border-2 border-ink bg-cobalt px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-white">
-                  <LifeBuoy className="h-3 w-3" />
+                <Badge variant="cobalt" stamp>
+                  <LifeBuoy className="h-3 w-3" aria-hidden="true" />
                   {ticketCounts.open} open
-                </span>
+                </Badge>
               ) : null}
             </div>
           </button>

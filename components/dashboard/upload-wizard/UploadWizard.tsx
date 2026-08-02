@@ -139,8 +139,9 @@ export default function UploadWizard({
         stepLabels={STEP_LABELS}
       />
 
-      {/* Restore Draft Toast */}
-      {showRestoreToast && (
+      {/* Keep the restore prompt with Cover Art (step 2), rather than
+          interrupting the first release-information screen. */}
+      {showRestoreToast && state.currentStep === 2 && (
         <div className="mb-6 rounded-lg border-[2.5px] border-ink bg-canary px-4 py-3 shadow-[3px_3px_0_0_var(--color-ink)] animate-fade-up">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">

@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { AlertTriangle, Check } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import type { AppSettings } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import Switch from '@/components/ui/Switch'
+import Alert from '@/components/ui/Alert'
 import { Input } from '@/components/ui/Field'
 
 interface AdminSettingsPanelProps {
@@ -82,12 +84,13 @@ export default function AdminSettingsPanel({
   return (
     <Card className="p-6 md:p-8">
       <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-        <div>
+        {/* Maintenance mode */}
+        <section>
           <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
             Maintenance mode
           </p>
           <div className="flex items-center justify-between gap-4 rounded-lg border-[2.5px] border-ink bg-paper p-4">
-            <div>
+            <div className="min-w-0">
               <p className="font-bold text-ink">Lock the site for artists</p>
               <p className="mt-0.5 text-sm font-medium text-ink-soft">
                 When ON, visiting artists see a &quot;Be right back&quot; page. The admin
@@ -100,25 +103,17 @@ export default function AdminSettingsPanel({
                 </p>
               ) : null}
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={maintenanceMode}
-              onClick={() => setMaintenanceMode((prev) => !prev)}
-              className={`brutal-press relative h-7 w-12 shrink-0 rounded-full border-[2.5px] border-ink transition-colors ${
-                maintenanceMode ? 'bg-punch' : 'bg-white'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full border-[2px] border-ink bg-white shadow-[1px_1px_0_0_var(--color-ink)] transition-transform ${
-                  maintenanceMode ? 'translate-x-[22px]' : 'translate-x-0.5'
-                }`}
-              />
-            </button>
+            <Switch
+              label="Toggle maintenance mode"
+              variant="danger"
+              checked={maintenanceMode}
+              onChange={setMaintenanceMode}
+            />
           </div>
-        </div>
+        </section>
 
-        <div>
+        {/* Upload limits */}
+        <section>
           <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
             Upload limits
           </p>
@@ -134,9 +129,10 @@ export default function AdminSettingsPanel({
               onChange={(e) => setMaxUploadMb(e.target.value)}
             />
           </div>
-        </div>
+        </section>
 
-        <div>
+        {/* Allowed file formats */}
+        <section>
           <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-ink">
             Allowed file formats
           </p>
@@ -162,24 +158,21 @@ export default function AdminSettingsPanel({
               <p className="mt-0.5 text-xs text-ink-soft">The artist upload flow accepts only .wav files.</p>
             </div>
           </div>
-        </div>
+        </section>
 
         {error ? (
-          <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-3 text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
-            {error}
-          </p>
+          <Alert variant="error">{error}</Alert>
         ) : null}
 
         {saved ? (
-          <p className="flex items-center gap-2 rounded-lg border-[2.5px] border-ink bg-lime px-4 py-3 text-sm font-bold text-ink shadow-[3px_3px_0_0_var(--color-ink)]">
-            <Check className="h-4 w-4" />
-            Settings saved.
-          </p>
+          <Alert variant="success">Settings saved.</Alert>
         ) : null}
 
-        <Button type="submit" isLoading={isSaving} disabled={isSaving}>
-          Save settings
-        </Button>
+        <div>
+          <Button type="submit" isLoading={isSaving} disabled={isSaving}>
+            Save settings
+          </Button>
+        </div>
       </form>
     </Card>
   )

@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Lock } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import Alert from '@/components/ui/Alert'
 
 interface AdminGateProps {
   onSuccess: (passcode: string) => void
@@ -60,13 +61,12 @@ export default function AdminGate({ onSuccess }: AdminGateProps) {
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
             placeholder="Passcode"
+            aria-label="Admin passcode"
             className="w-full rounded-lg border-[3px] border-ink bg-paper px-3.5 py-3 text-center font-mono text-sm font-bold tracking-[0.3em] text-ink placeholder:font-body placeholder:font-normal placeholder:tracking-normal placeholder:text-ink-faint focus:shadow-[3px_3px_0_0_var(--color-cobalt)] focus:outline-none"
           />
 
           {error ? (
-            <p className="rounded-lg border-[2.5px] border-ink bg-punch px-4 py-2.5 text-center text-sm font-bold text-white shadow-[3px_3px_0_0_var(--color-ink)]">
-              {error}
-            </p>
+            <Alert variant="error">{error}</Alert>
           ) : null}
 
           <Button type="submit" isLoading={isVerifying} disabled={isVerifying} className="w-full">

@@ -6,6 +6,7 @@ import type { Artist, ReleaseWithTracks, TicketWithMessages, TicketMessage, Tick
 import { formatDate } from '@/lib/utils'
 import type { ArtistReleaseCounts, ArtistTicketCounts } from '@/components/admin/ArtistRoster'
 import Card from '@/components/ui/Card'
+import IconButton from '@/components/ui/IconButton'
 import ReleaseManager from '@/components/admin/ReleaseManager'
 import TicketsList from '@/components/admin/TicketsList'
 import UploadAccessPanel from '@/components/admin/UploadAccessPanel'
@@ -50,7 +51,8 @@ export default function ArtistDetailPanel({
       ref={panelRef}
       className="animate-fade-up overflow-hidden shadow-[6px_6px_0_0_var(--color-cobalt)]"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b-[3px] border-ink bg-cobalt px-6 py-5">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b-[3px] border-ink bg-cobalt px-5 py-5 md:px-6">
         <div className="flex items-center gap-4">
           {artist.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -65,59 +67,58 @@ export default function ArtistDetailPanel({
             </span>
           )}
           <div>
-            <p className="font-display text-lg uppercase text-white">{artist.name}</p>
+            <p className="font-display text-lg uppercase tracking-tight text-white">{artist.name}</p>
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">
               UID {artist.display_id} · Joined {formatDate(artist.created_at)}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-3">
+          <div className="hidden flex-wrap items-center gap-1.5 sm:flex">
             <CountChip label="Total" value={counts.total} fillClassName="bg-white text-ink" />
             <CountChip label="Pending" value={counts.pending} fillClassName="bg-canary text-ink" />
-            <CountChip label="Approved" value={counts.approved} fillClassName="bg-cobalt text-white" />
-            <CountChip label="Sent" value={counts.sent} fillClassName="bg-white text-ink" />
+            <CountChip label="Approved" value={counts.approved} fillClassName="bg-white text-ink" />
             <CountChip label="Live" value={counts.live} fillClassName="bg-lime text-ink" />
-            <CountChip label="Rejected" value={counts.rejected} fillClassName="bg-punch text-white" />
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close artist panel"
-            className="brutal-press flex h-10 w-10 shrink-0 items-center justify-center rounded-md border-[2.5px] border-ink bg-white text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors hover:bg-punch hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <IconButton icon={X} label="Close artist panel" onClick={onClose} className="bg-white text-ink hover:bg-punch hover:text-white" />
         </div>
       </div>
 
       <div className="space-y-8 p-4 md:p-6">
         <UploadAccessPanel artistId={artist.id} passcode={passcode} />
-        <div>
-          <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
-            Releases
-          </p>
+
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="h-3 w-3 rounded-sm border-2 border-ink bg-canary" aria-hidden="true" />
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+              Releases
+            </p>
+          </div>
           <ReleaseManager
             releases={releases}
             passcode={passcode}
             onReleaseChange={onReleaseChange}
             emptyMessage={`${artist.name} hasn't submitted anything yet.`}
           />
-        </div>
+        </section>
 
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
-              Support tickets
-              {ticketCounts.total > 0 ? (
-                <span className="font-normal text-ink-faint">({ticketCounts.total})</span>
-              ) : null}
-            </p>
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-sm border-2 border-ink bg-cobalt" aria-hidden="true" />
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+                Support tickets
+                {ticketCounts.total > 0 ? (
+                  <span className="ml-1 font-normal">({ticketCounts.total})</span>
+                ) : null}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setShowTickets((prev) => !prev)}
+              aria-expanded={showTickets}
               className="brutal-press flex items-center gap-1.5 rounded-md border-2 border-ink bg-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-colors hover:bg-paper"
             >
               {showTickets ? (
@@ -139,7 +140,7 @@ export default function ArtistDetailPanel({
               onNewMessage={onNewMessage}
             />
           ) : null}
-        </div>
+        </section>
       </div>
     </Card>
   )
