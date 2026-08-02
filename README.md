@@ -25,6 +25,8 @@ is for brand-new databases only):
    six-step upload workflow metadata (release credits, platforms, and track
    credits) used by the Upload Release page.
 
+5. `supabase/migration-artist-access.sql` — adds the admin-controlled upload access and its append-only access history.
+
 Each script is safe to run on a database with real data already in it.
 
 ---
